@@ -16,6 +16,8 @@
 #include <QMetaProperty>
 #include <QAbstractButton>
 
+VSP_DEFINE_PRIVATE( VspScreenQt )
+
 VspScreenQt::VspScreenQt( VspScreenQtPrivate & dd, ScreenMgr * mgr ) :
     VspScreen( mgr ),
     d_ptr( &dd )

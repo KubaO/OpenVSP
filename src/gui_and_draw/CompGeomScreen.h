@@ -13,7 +13,7 @@
 class CompGeomScreenPrivate;
 class CompGeomScreen : public VspScreenQt
 {
-    Q_DECLARE_PRIVATE( CompGeomScreen )
+    VSP_DECLARE_PRIVATE( CompGeomScreen )
 public:
     CompGeomScreen( ScreenMgr* mgr );
     ~CompGeomScreen();

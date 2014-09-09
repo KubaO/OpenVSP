@@ -13,7 +13,7 @@
 class DegenGeomScreenPrivate;
 class DegenGeomScreen : public VspScreenQt
 {
-    VSP_DECLARE_PRIVATE( VspScreenQt )
+    VSP_DECLARE_PRIVATE( DegenGeomScreen )
 public:
     DegenGeomScreen( ScreenMgr* mgr );
     ~DegenGeomScreen();

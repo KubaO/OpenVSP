@@ -60,6 +60,7 @@ class CompGeomScreenPrivate : public QDialog, public VspScreenQtPrivate {
         }
     }
 };
+VSP_DEFINE_PRIVATE( CompGeomScreen )
 
 CompGeomScreenPrivate::CompGeomScreenPrivate( CompGeomScreen * q ) :
     VspScreenQtPrivate( q )

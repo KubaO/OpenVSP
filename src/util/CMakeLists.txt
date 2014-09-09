@@ -30,6 +30,7 @@ UtilTestSuite.cpp
 Vec2d.cpp
 Vec3d.cpp
 VspCurve.cpp
+VspObj.cpp
 VspSurf.cpp
 BndBox.h
 Combination.h
@@ -53,6 +54,7 @@ UsingCpp11.h
 Vec2d.h
 Vec3d.h
 VspCurve.h
+VspObj.h
 VspSurf.h
 WriteMatlab.h
 )

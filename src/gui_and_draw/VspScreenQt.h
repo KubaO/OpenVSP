@@ -11,13 +11,14 @@
 #define VSPSCREENQT__INCLUDED_
 
 #include "VSPScreen.h"
+#include "VspObj.h"
 #include <QScopedPointer>
 
 class VspScreenQtPrivate;
 class VspScreenQt : public VspScreen
 {
     Q_DISABLE_COPY( VspScreenQt )
-    Q_DECLARE_PRIVATE( VspScreenQt )
+    VSP_DECLARE_PRIVATE( VspScreenQt )
     bool Update() Q_DECL_OVERRIDE;
 public:
     ~VspScreenQt();
@@ -38,15 +39,5 @@ protected:
     QScopedPointer<VspScreenQtPrivate> const d_ptr;
     VspScreenQt( VspScreenQtPrivate & dd, ScreenMgr * mgr );
 };
-
-/// Use in place of Q_DECLARE_PRIVATE for a multiply-inheriting private class.
-#define VSP_DECLARE_PRIVATE(Class) \
-    friend class Class##Private; \
-    Class##Private* d_func(); \
-    const Class##Private* d_func() const;
-
-#define VSP_DEFINE_PRIVATE(Class) \
-    inline Class##Private* Class::d_func() { return static_cast<Class##Private *>(qGetPtrHelper(d_ptr)); } \
-    inline const Class##Private* Class::d_func() const { return static_cast<const Class##Private *>(qGetPtrHelper(d_ptr)); }
 
 #endif // VSPSCREENQT__INCLUDED_

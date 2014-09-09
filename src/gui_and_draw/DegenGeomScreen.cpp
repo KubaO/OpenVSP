@@ -45,6 +45,7 @@ class DegenGeomScreenPrivate : public QDialog, public VspScreenQtPrivate
     }
     Q_SLOT void on_computeButton_clicked();
 };
+VSP_DEFINE_PRIVATE( DegenGeomScreen )
 
 DegenGeomScreenPrivate::DegenGeomScreenPrivate( DegenGeomScreen * q ) :
     VspScreenQtPrivate( q )
