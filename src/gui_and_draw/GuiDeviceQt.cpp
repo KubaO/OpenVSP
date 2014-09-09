@@ -155,120 +155,40 @@ void ToggleButtonQtPrivate::on_toggled( bool val )
 ToggleButtonQt::~ToggleButtonQt() {}
 
 //
-// AbstractDoubleInputQt
-//
-
-class WidgetDoubleInputQtPrivate : public GuiDeviceQtPrivate
-{
-    Q_DECLARE_PUBLIC( WidgetDoubleInputQt )
-protected:
-    double Range;
-    double MinBound;
-    double MaxBound;
-    int Decimals;
-
-    WidgetDoubleInputQtPrivate( WidgetDoubleInputQt * q );
-    virtual void SetWidgetRange( double min, double max ) = 0;
-    virtual void SetWidgetDecimals( int) {}
-    virtual void SetWidgetValue( double ) = 0;
-};
-VSP_DEFINE_PRIVATE( WidgetDoubleInputQt )
-
-WidgetDoubleInputQtPrivate::WidgetDoubleInputQtPrivate( WidgetDoubleInputQt * q ) :
-    GuiDeviceQtPrivate( q ),
-    Range(10.0),
-    MinBound(0.0),
-    MaxBound(0.0),
-    Decimals( 2 )
-{}
-
-WidgetDoubleInputQt::WidgetDoubleInputQt( WidgetDoubleInputQtPrivate & d ) :
-    GuiDeviceQt( d )
-{}
-
-void WidgetDoubleInputQt::Init( VspScreenQt* screen, double range, int decimals )
-{
-    Q_D( WidgetDoubleInputQt );
-    GuiDeviceQt::Init( screen );
-    SetRange( range );
-    SetDecimals( decimals );
-}
-
-void WidgetDoubleInputQt::SetValAndLimits( Parm* parm_ptr )
-{
-    Q_D( WidgetDoubleInputQt );
-    double new_val = parm_ptr->Get();
-
-    if ( m_NewParmFlag || new_val < d->MinBound || new_val > d->MaxBound )
-    {
-        d->MinBound = max( new_val - d->Range, parm_ptr->GetLowerLimit() );
-        d->MaxBound = min( new_val + d->Range, parm_ptr->GetUpperLimit() );
-        d->SetWidgetRange( d->MinBound, d->MaxBound );
-    }
-
-    if ( CheckValUpdate( new_val ) )
-    {
-        d->SetWidgetValue( new_val );
-    }
-
-    m_LastVal = new_val;
-}
-
-void WidgetDoubleInputQt::SetRange( double range )
-{
-    d_func()->Range = range;
-}
-
-void WidgetDoubleInputQt::SetDecimals( int decimals )
-{
-    Q_D( WidgetDoubleInputQt );
-    d->Decimals = decimals;
-    d->SetWidgetDecimals( decimals );
-}
-
-WidgetDoubleInputQt::~WidgetDoubleInputQt() {}
-
-//
 // SliderQt
 //
 
-class SliderQtPrivate : public QObject, public WidgetDoubleInputQtPrivate
+class SliderQtPrivate : public QObject, public GuiDeviceQtPrivate
 {
     Q_OBJECT
     Q_DECLARE_PUBLIC( SliderQt )
 protected:
     DoubleSlider* Slider;
+    double Range;
+    double MinBound;
+    double MaxBound;
 
     SliderQtPrivate( SliderQt * q );
-    void SetWidgetRange( double min, double max ) Q_DECL_OVERRIDE;
-    void SetWidgetValue( double ) Q_DECL_OVERRIDE;
     Q_SLOT virtual void on_valueChanged( double );
 };
 VSP_DEFINE_PRIVATE( SliderQt )
 
 SliderQtPrivate::SliderQtPrivate( SliderQt * q ) :
-    WidgetDoubleInputQtPrivate( q ),
-    Slider(0)
+    GuiDeviceQtPrivate( q ),
+    Slider(0),
+    Range(10.0),
+    MinBound(0.0),
+    MaxBound(0.0)
 {}
 
-void SliderQtPrivate::SetWidgetRange( double min, double max )
-{
-    Slider->setRange( min, max );
-}
-
-void SliderQtPrivate::SetWidgetValue( double val )
-{
-    Slider->setValue( val );
-}
-
 SliderQt::SliderQt() :
-    WidgetDoubleInputQt( * new SliderQtPrivate( this ) )
+    GuiDeviceQt( * new SliderQtPrivate( this ) )
 {
     m_Type = GDEV_SLIDER;
 }
 
-SliderQt::SliderQt( SliderQtPrivate & d ) :
-    WidgetDoubleInputQt( d )
+SliderQt::SliderQt( SliderQtPrivate & q ) :
+    GuiDeviceQt( q )
 {
     m_Type = GDEV_SLIDER;
 }
@@ -276,11 +196,38 @@ SliderQt::SliderQt( SliderQtPrivate & d ) :
 void SliderQt::Init( VspScreenQt* screen, DoubleSlider* slider_widget, double range )
 {
     Q_D( SliderQt );
-    WidgetDoubleInputQt::Init( screen, range, 0 );
+    GuiDeviceQt::Init( screen );
     AddWidget( slider_widget );
+    SetRange( range );
     d->Slider = slider_widget;
     assert( d->Slider );
     d->connect( d->Slider, SIGNAL( valueChanged(double) ), SLOT( on_valueChanged(double) ) );
+}
+
+void SliderQt::SetValAndLimits( Parm* parm_ptr )
+{
+    Q_D( SliderQt );
+    assert( d->Slider );
+    double new_val = parm_ptr->Get();
+
+    if ( m_NewParmFlag || new_val < d->MinBound || new_val > d->MaxBound )
+    {
+        d->MinBound = max( new_val - d->Range, parm_ptr->GetLowerLimit() );
+        d->MaxBound = min( new_val + d->Range, parm_ptr->GetUpperLimit() );
+        d->Slider->setRange( d->MinBound, d->MaxBound );
+    }
+
+    if ( CheckValUpdate( new_val ) )
+    {
+        d->Slider->setValue( new_val );
+    }
+
+    m_LastVal = new_val;
+}
+
+void SliderQt::SetRange( double range )
+{
+    d_func()->Range = range;
 }
 
 void SliderQtPrivate::on_valueChanged( double new_val )
@@ -356,7 +303,7 @@ LogSliderQt::~LogSliderQt() {}
 // InputQt
 //
 
-class InputQtPrivate : public QObject, public WidgetDoubleInputQtPrivate
+class InputQtPrivate : public QObject, public GuiDeviceQtPrivate
 {
     Q_OBJECT
     Q_DECLARE_PUBLIC( InputQt )
@@ -365,50 +312,33 @@ class InputQtPrivate : public QObject, public WidgetDoubleInputQtPrivate
     ParmButtonQt ParmButton;
 
     InputQtPrivate( InputQt * q );
-    void SetWidgetRange( double, double ) Q_DECL_OVERRIDE;
-    void SetWidgetDecimals( int ) Q_DECL_OVERRIDE;
-    void SetWidgetValue( double ) Q_DECL_OVERRIDE;
     Q_SLOT void on_valueChanged( double );
 };
 VSP_DEFINE_PRIVATE( InputQt )
 
 InputQtPrivate::InputQtPrivate( InputQt * q ) :
-    WidgetDoubleInputQtPrivate( q ),
+    GuiDeviceQtPrivate( q ),
     Input( 0 ),
     ParmButtonFlag( false )
 {}
 
-void InputQtPrivate::SetWidgetRange( double min, double max )
-{
-    if ( Input ) Input->setRange( min, max );
-}
-
-void InputQtPrivate::SetWidgetDecimals( int decimals )
-{
-    if ( Input ) Input->setDecimals( decimals );
-}
-
-void InputQtPrivate::SetWidgetValue( double val )
-{
-    if ( Input ) Input->setValue( val );
-}
-
 InputQt::InputQt() :
-    WidgetDoubleInputQt( *new InputQtPrivate( this ) )
+    GuiDeviceQt( *new InputQtPrivate( this ) )
 {
     m_Type = GDEV_INPUT;
 }
 
-void InputQt::Init( VspScreenQt* screen, QDoubleSpinBox* input, double range, int decimals, QAbstractButton* parm_button )
+void InputQt::Init( VspScreenQt* screen, QDoubleSpinBox* input, int decimals, QAbstractButton* parm_button )
 {
     Q_D( InputQt );
     assert( input );
-    WidgetDoubleInputQt::Init( screen, range, decimals );
+    GuiDeviceQt::Init( screen );
     AddWidget( parm_button );
     AddWidget( input, true );
 
     d->Input = input;
     d->Input->setKeyboardTracking( false ); // FL_WHEN_ENTER_KEY | FL_WHEN_RELEASE
+    SetDecimals( decimals );
     d->connect( d->Input, SIGNAL( valueChanged(double) ), SLOT( on_valueChanged(double) ) );
 
     d->ParmButtonFlag = false;
@@ -419,9 +349,33 @@ void InputQt::Init( VspScreenQt* screen, QDoubleSpinBox* input, double range, in
     }
 }
 
+void InputQt::SetDecimals( int decimals )
+{
+    Q_D( InputQt );
+    if ( d->Input ) d->Input->setDecimals( decimals );
+}
+
 void InputQt::SetButtonNameUpdate( bool flag )
 {
     d_func()->ParmButton.SetButtonNameUpdate( flag );
+}
+
+void InputQt::SetValAndLimits( Parm* parm_ptr )
+{
+    Q_D( InputQt );
+    assert( d->Input );
+    double new_val = parm_ptr->Get();
+
+    if ( CheckValUpdate( new_val ) )
+    {
+        d->Input->setValue( new_val );
+    }
+    m_LastVal = new_val;
+
+    if ( d->ParmButtonFlag )
+    {
+        d->ParmButton.Update( parm_ptr->GetID() );
+    }
 }
 
 void InputQtPrivate::on_valueChanged( double new_val )
@@ -569,7 +523,7 @@ void SliderInputQt::Init( VspScreenQt* screen, DoubleSlider* slider, QDoubleSpin
         d->Slider.Init( screen, slider, range );
     }
 
-    d->Input.Init( screen, input, range, decimals );
+    d->Input.Init( screen, input, decimals );
 
     ClearAllWidgets();
     AddWidget( parm_button );
@@ -598,7 +552,6 @@ void SliderInputQt::Update( const string& parm_id )
 void SliderInputQt::SetRange( double range )
 {
     d_func()->Slider.SetRange( range );
-    d_func()->Input.SetRange( range );
 }
 
 void SliderInputQt::SetDecimals( int decimals )
