@@ -44,7 +44,7 @@ void DoubleSliderPrivate::on_valueChanged( int val )
 }
 
 DoubleSlider::DoubleSlider( QWidget *parent ) :
-    QWidget( parent ),
+    AbstractDoubleSlider( parent ),
     d_ptr( new DoubleSliderPrivate( this ))
 {
 }

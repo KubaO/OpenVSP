@@ -8,17 +8,14 @@
 #ifndef DOUBLESLIDER_H
 #define DOUBLESLIDER_H
 
-#include <QWidget>
+#include "AbstractDoubleSlider.h"
 
 class DoubleSliderPrivate;
-class DoubleSlider : public QWidget
+class DoubleSlider : public AbstractDoubleSlider
 {
     Q_OBJECT
     Q_DECLARE_PRIVATE( DoubleSlider )
-    Q_PROPERTY( double maximum READ maximum WRITE setMaximum )
-    Q_PROPERTY( double minimum READ minimum WRITE setMinimum )
     Q_PROPERTY( Qt::Orientation orientation READ orientation WRITE setOrientation )
-    Q_PROPERTY( double value READ value WRITE setValue NOTIFY valueChanged USER true )
     Q_PRIVATE_SLOT( d_func(), void on_valueChanged( int ) )
     QScopedPointer<DoubleSliderPrivate> const d_ptr;
 public:
@@ -27,14 +24,13 @@ public:
 
     Qt::Orientation orientation() const;
     Q_SLOT void setOrientation( Qt::Orientation );
-    double minimum() const;
-    double maximum() const;
-    void setMinimum( double );
-    void setMaximum( double );
-    Q_SLOT void setRange( double, double );
-    double value() const;
-    Q_SLOT void setValue( double );
-    Q_SIGNAL void valueChanged( double );
+    double minimum() const Q_DECL_OVERRIDE;
+    double maximum() const Q_DECL_OVERRIDE;
+    void setMinimum( double ) Q_DECL_OVERRIDE;
+    void setMaximum( double ) Q_DECL_OVERRIDE;
+    void setRange( double, double ) Q_DECL_OVERRIDE;
+    double value() const Q_DECL_OVERRIDE;
+    void setValue( double ) Q_DECL_OVERRIDE;
     QSize minimumSizeHint() const Q_DECL_OVERRIDE;
     QSize sizeHint() const Q_DECL_OVERRIDE;
 protected:

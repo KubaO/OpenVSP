@@ -71,7 +71,7 @@ void ValueSliderPrivate::on_qt_spinbox_valueChanged( double val )
 }
 
 ValueSlider::ValueSlider( QWidget *parent ) :
-    QWidget( parent ),
+    AbstractDoubleSlider( parent ),
     d_ptr( new ValueSliderPrivate( this ))
 {
     setRange( 0.0, 1.0 );

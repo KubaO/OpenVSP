@@ -6,7 +6,7 @@
 //////////////////////////////////////////////////////////////////////
 
 #include "GuiDeviceQt.h"
-#include "DoubleSlider.h"
+#include "AbstractDoubleSlider.h"
 #include "ParmMgr.h"
 #include "ScreenMgr.h"
 #include "UiSignalBlocker.h"
@@ -165,7 +165,7 @@ class SliderQtPrivate : public QObject, public GuiDeviceQtPrivate
     Q_OBJECT
     Q_DECLARE_PUBLIC( SliderQt )
 protected:
-    DoubleSlider* Slider;
+    AbstractDoubleSlider* Slider;
     double Range;
     double MinBound;
     double MaxBound;
@@ -195,7 +195,7 @@ SliderQt::SliderQt( SliderQtPrivate & q ) :
     m_Type = GDEV_SLIDER;
 }
 
-void SliderQt::Init( VspScreenQt* screen, DoubleSlider* slider_widget, double range )
+void SliderQt::Init(VspScreenQt* screen, AbstractDoubleSlider *slider_widget, double range )
 {
     Q_D( SliderQt );
     GuiDeviceQt::Init( screen );
@@ -509,7 +509,7 @@ SliderInputQt::SliderInputQt() :
     m_Type = GDEV_SLIDER_INPUT;
 }
 
-void SliderInputQt::Init( VspScreenQt* screen, DoubleSlider* slider, QDoubleSpinBox* input,
+void SliderInputQt::Init(VspScreenQt* screen, AbstractDoubleSlider *slider, QDoubleSpinBox* input,
                           double range, int decimals, QAbstractButton* parm_button,
                           bool log_slider )
 {

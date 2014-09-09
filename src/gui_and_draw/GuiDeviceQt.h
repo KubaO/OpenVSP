@@ -14,9 +14,8 @@
 
 class QWidget;
 class QAbstractButton;
-class DoubleSlider;
+class AbstractDoubleSlider;
 class QDoubleSpinBox;
-
 
 class GuiDeviceQtPrivate;
 class GuiDeviceQt : public GuiDevice
@@ -66,7 +65,7 @@ class SliderQt : public GuiDeviceQt
     VSP_DECLARE_PRIVATE( SliderQt )
 public:
     SliderQt();
-    void Init( VspScreenQt* screen, DoubleSlider* slider_widget, double range );
+    void Init( VspScreenQt* screen, AbstractDoubleSlider* slider_widget, double range );
     void SetRange( double range );
     ~SliderQt();
 protected:
@@ -122,7 +121,7 @@ class SliderInputQt : public GuiDeviceQt
     VSP_DECLARE_PRIVATE( SliderInputQt )
 public:
     SliderInputQt();
-    void Init( VspScreenQt* screen, DoubleSlider*, QDoubleSpinBox*,
+    void Init( VspScreenQt* screen, AbstractDoubleSlider*, QDoubleSpinBox*,
                double range, int decimals, QAbstractButton* parm_button = 0,
                bool log_slider = false );
     void Update( const string& parm_id ) Q_DECL_OVERRIDE;
