@@ -9,6 +9,7 @@
 #include "DoubleSlider.h"
 #include "ParmMgr.h"
 #include "ScreenMgr.h"
+#include "UiSignalBlocker.h"
 #include "StlHelper.h"
 #include <QObject>
 #include <QDoubleSpinBox>
@@ -140,6 +141,7 @@ void ToggleButtonQt::SetValAndLimits( Parm* p )
     BoolParm* bool_p = dynamic_cast<BoolParm*>( p );
     Q_ASSERT( bool_p );
 
+    UiSignalBlocker block( d->Button );
     d->Button->setChecked( bool_p->Get() );
 }
 
@@ -208,6 +210,7 @@ void SliderQt::SetValAndLimits( Parm* parm_ptr )
 {
     Q_D( SliderQt );
     assert( d->Slider );
+    UiSignalBlocker block( d->Slider );
     double new_val = parm_ptr->Get();
 
     if ( m_NewParmFlag || new_val < d->MinBound || new_val > d->MaxBound )
@@ -227,6 +230,8 @@ void SliderQt::SetValAndLimits( Parm* parm_ptr )
 
 void SliderQt::SetRange( double range )
 {
+    Q_D( SliderQt );
+    UiSignalBlocker block( d->Slider );
     d_func()->Range = range;
 }
 
@@ -267,6 +272,7 @@ void LogSliderQt::SetValAndLimits( Parm* parm_ptr )
     Q_D( LogSliderQt );
     double m_Tol = 0.000001;
     assert( d->Slider );
+    UiSignalBlocker block( d->Slider );
     double new_val = parm_ptr->Get();
 
     if ( m_NewParmFlag || new_val < ( d->MinBound - m_Tol ) || new_val > ( d->MaxBound + m_Tol ) )
@@ -352,6 +358,7 @@ void InputQt::Init( VspScreenQt* screen, QDoubleSpinBox* input, int decimals, QA
 void InputQt::SetDecimals( int decimals )
 {
     Q_D( InputQt );
+    UiSignalBlocker block( d->Input );
     if ( d->Input ) d->Input->setDecimals( decimals );
 }
 
@@ -364,11 +371,13 @@ void InputQt::SetValAndLimits( Parm* parm_ptr )
 {
     Q_D( InputQt );
     assert( d->Input );
+    UiSignalBlocker block( d->Input );
     double new_val = parm_ptr->Get();
 
     if ( CheckValUpdate( new_val ) )
     {
         d->Input->setValue( new_val );
+        d->Input->setRange( parm_ptr->GetLowerLimit(), parm_ptr->GetUpperLimit() );
     }
     m_LastVal = new_val;
 
