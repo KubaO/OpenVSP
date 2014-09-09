@@ -33,6 +33,7 @@ QT5_WRAP_UI(UI_HEADERS
 ../qt_screens/DegenGeomScreen.ui
 ../qt_screens/ExportScreen.ui
 ../qt_screens/ImportScreen.ui
+../qt_screens/LabelScreen.ui
 ../qt_screens/ManageGeomScreen.ui
 ../qt_screens/ManageViewScreen.ui
 ../qt_screens/MassPropScreen.ui
@@ -45,6 +46,7 @@ QT5_WRAP_UI(UI_HEADERS
 )
 
 ADD_LIBRARY(gui_and_draw
+AbstractDoubleSlider.cpp
 AdvLinkScreen.cpp
 AwaveScreen.cpp
 BlankScreen.cpp
@@ -99,6 +101,7 @@ VspScreen.cpp
 VspScreenQt.cpp
 VSPWindow.cpp
 WingScreen.cpp
+AbstractDoubleSlider.h
 AdvLinkScreen.h
 AwaveScreen.h
 BlankScreen.h
