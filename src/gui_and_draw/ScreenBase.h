@@ -78,139 +78,17 @@ protected:
     TabScreen( TabScreenPrivate &, ScreenMgr * );
 };
 
-//==== Geom Screen ====//
+
+class GeomScreenPrivate;
 class GeomScreen : public TabScreen
 {
+    VSP_DECLARE_PRIVATE( GeomScreen )
 public:
     GeomScreen( ScreenMgr* mgr, int w, int h, const string & title );
-    virtual ~GeomScreen()                               {}
+    ~GeomScreen();
 
-    virtual bool Update( );
     virtual void CallBack( Fl_Widget *w );
     virtual void GuiDeviceCallBack( GuiDevice* device );
-    virtual void SubSurfDispGroup( GroupLayout * group );
-    static void staticScreenCB( Fl_Widget *w, void* data )
-    {
-        ( ( GeomScreen* )data )->CallBack( w );
-    }
-
-    virtual void UpdateMaterialNames();
-
-    //==== Group Layouts ====//
-    GroupLayout m_GenLayout;
-    GroupLayout m_Density;
-    GroupLayout m_Shell;
-
-    GroupLayout m_XFormLayout;
-    GroupLayout m_SubSurfLayout;
-
-    //==== Names, Color, Material ====//
-    StringInput m_NameInput;
-    ColorPicker m_ColorPicker;
-    Choice m_MaterialChoice;
-    TriggerButton m_CustomMaterialButton;
-    Choice m_ExportNameChoice;
-
-    //==== Tesselation ====//
-    SliderInput m_NumUSlider;
-    SliderInput m_NumWSlider;
-
-    //==== Mass Props ====//
-    Input m_DensityInput;
-    Input m_ShellMassAreaInput;
-    ToggleButton m_ThinShellButton;
-    Counter m_PriorCounter;
-
-    Fl_Check_Browser* m_SetBrowser;
-
-    //==== XForms ====//
-    ToggleButton m_XFormAbsoluteToggle;
-    ToggleButton m_XFormRelativeToggle;
-    ToggleRadioGroup m_XFormAbsRelToggle;
-
-    SliderAdjRange2Input m_XLocSlider;
-    SliderAdjRange2Input m_YLocSlider;
-    SliderAdjRange2Input m_ZLocSlider;
-
-    SliderAdjRange2Input m_XRotSlider;
-    SliderAdjRange2Input m_YRotSlider;
-    SliderAdjRange2Input m_ZRotSlider;
-
-    SliderAdjRangeInput m_RotOriginSlider;
-
-    CheckButtonBit m_XYSymToggle;
-    CheckButtonBit m_XZSymToggle;
-    CheckButtonBit m_YZSymToggle;
-
-    ToggleButton m_AxialNoneToggle;
-    ToggleButton m_AxialXToggle;
-    ToggleButton m_AxialYToggle;
-    ToggleButton m_AxialZToggle;
-    ToggleRadioGroup m_AxialToggleGroup;
-    SliderInput m_AxialNSlider;
-
-    SliderInput m_ScaleSlider;
-    TriggerButton m_ScaleResetButton;
-    TriggerButton m_ScaleAcceptButton;
-
-    //==== Attachments
-    ToggleButton m_TransNoneButton;
-    ToggleButton m_TransCompButton;
-    ToggleButton m_TransUVButton;
-    ToggleRadioGroup m_TransToggleGroup;
-
-    ToggleButton m_RotNoneButton;
-    ToggleButton m_RotCompButton;
-    ToggleButton m_RotUVButton;
-    ToggleRadioGroup m_RotToggleGroup;
-
-    SliderInput m_AttachUSlider;
-    SliderInput m_AttachVSlider;
-
-    //====== SubSurface Tab =====//
-    int m_SubSurfTab_ind;
-    GroupLayout* m_CurSubDispGroup;
-    Fl_Browser* m_SubSurfBrowser;
-    TriggerButton m_DelSubSurfButton;
-    TriggerButton m_AddSubSurfButton;
-    Choice m_SubSurfChoice;
-
-    GroupLayout m_SSCommonGroup;
-    StringInput m_SubNameInput;
-
-    // SS_Line
-    GroupLayout m_SSLineGroup;
-    SliderInput m_SSLineConstSlider; // Either Constant U or W
-    ToggleButton m_SSLineConstUButton;
-    ToggleButton m_SSLineConstWButton;
-    ToggleRadioGroup m_SSLineConstToggleGroup;
-
-    ToggleButton m_SSLineGreaterToggle;
-    ToggleButton m_SSLineLessToggle;
-    ToggleRadioGroup m_SSLineTestToggleGroup;
-
-    // SS_Rectangle
-    GroupLayout m_SSRecGroup;
-    SliderInput m_SSRecCentUSlider;
-    SliderInput m_SSRecCentWSlider;
-    SliderInput m_SSRecULenSlider;
-    SliderInput m_SSRecWLenSlider;
-    SliderAdjRangeInput m_SSRecThetaSlider;
-    ToggleButton m_SSRecInsideButton;
-    ToggleButton m_SSRecOutsideButton;
-    ToggleRadioGroup m_SSRecTestToggleGroup;
-
-    // SS_Ellipse
-    GroupLayout m_SSEllGroup;
-    SliderInput m_SSEllCentUSlider;
-    SliderInput m_SSEllCentWSlider;
-    SliderInput m_SSEllULenSlider;
-    SliderInput m_SSEllWLenSlider;
-    SliderInput m_SSEllTessSlider;
-    SliderAdjRangeInput m_SSEllThetaSlider;
-    ToggleButton m_SSEllInsideButton;
-    ToggleButton m_SSEllOutsideButton;
-    ToggleRadioGroup m_SSEllTestToggleGroup;
 };
 
 //==== Skin Screen ====//

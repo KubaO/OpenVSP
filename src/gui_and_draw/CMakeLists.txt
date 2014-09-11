@@ -94,6 +94,7 @@ StackScreen.cpp
 SubGLWindow.cpp
 SubGLWindow.cpp
 TypeEditorScreen.cpp
+UiBuilder.cpp
 UiSignalBlocker.cpp
 UserParmScreen.cpp
 ValueSlider.cpp
@@ -149,6 +150,7 @@ StackScreen.h
 SubGLWindow.h
 SubGLWindow.h
 TypeEditorScreen.h
+UiBuilder.h
 UiSignalBlocker.h
 UserParmScreen.h
 ValueSlider.h

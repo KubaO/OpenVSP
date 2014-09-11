@@ -20,11 +20,14 @@
 #include "Camera.h"
 #include "ScreenMgr.h"
 #include "MaterialEditScreen.h"
+#include "UiBuilder.h"
 #include "VSPWindow.h"
 #include "VspScreenQt_p.h"
 #include <QLabel>
 #include <QTabWidget>
+#include <QListWidget>
 #include <QScrollArea>
+#include <QGridLayout>
 
 using namespace vsp;
 using std::map;
@@ -39,27 +42,28 @@ class BasicScreenPrivate : public QWidget, public VspScreenQtPrivate
     Q_OBJECT
     Q_DECLARE_PUBLIC( BasicScreen )
     Q_PRIVATE_SLOT( self(), void SetUpdateFlag() )
-
+public:
+    QGridLayout layout;
     QLabel titleBox;
 
     BasicScreenPrivate( BasicScreen *, int w, int h, const string & title );
     QWidget * widget() Q_DECL_OVERRIDE { return this; }
+    bool Update() Q_DECL_OVERRIDE { return true; }
 };
 VSP_DEFINE_PRIVATE( BasicScreen )
 
 BasicScreenPrivate::BasicScreenPrivate( BasicScreen * q, int w, int h, const string & title ) :
     VspScreenQtPrivate( q ),
-    titleBox( this )
+    layout( this )
 {
     resize( w, h );
-    d->titleBox.setGeometry( 2, 2, w - 4, 20 );
-    d->titleBox.setObjectName( "screenHeader" );
+    layout.addWidget( &titleBox, layout.rowCount(), 0 );
+    titleBox.setObjectName( "screenHeader" );
     q->SetTitle( title );
 }
 
-
 BasicScreen::BasicScreen( ScreenMgr* mgr, int w, int h, const string & title  ) :
-    VspScreenQt( new BasicScreenPrivate( this, w, h, title ), mgr )
+    VspScreenQt( *new BasicScreenPrivate( this, w, h, title ), mgr )
 {}
 
 BasicScreen::BasicScreen( BasicScreenPrivate & dd, ScreenMgr * mgr ) :
@@ -73,7 +77,7 @@ void BasicScreen::SetTitle( const string& title )
     if ( title != d->titleBox.text().toStdString() )
     {
         d->titleBox.setText( title.c_str() );
-        d->setWindowTitle( title );
+        d->setWindowTitle( title.c_str() );
     }
 }
 
@@ -85,32 +89,34 @@ BasicScreen::~BasicScreen() {}
 
 class TabScreenPrivate : public BasicScreenPrivate
 {
+    Q_OBJECT
     Q_DECLARE_PUBLIC( TabScreen )
+public:
     enum { TAB_H = 25 };
 
     QTabWidget tabs;
 
-    TabScreenPrivate( TabScreen *, int w, int h, const std::string & title, int );
-    virtual QWidget* MakeTab( const string& title );
+    TabScreenPrivate( TabScreen *, int w, int h, const std::string & title, int baseymargin = 0 );
+    static QWidget* MakeTab( const string& title );
 };
+VSP_DEFINE_PRIVATE( TabScreen )
 
-TabScreenPrivate( TabScreen * q, int w, int h, const std::string & title, int baseymargin ) :
-    BasicScreenPrivate( q, w, h, title ),
-    tabs( this )
+TabScreenPrivate::TabScreenPrivate( TabScreen * q, int w, int h, const std::string & title, int baseymargin ) :
+    BasicScreenPrivate( q, w, h, title )
 {
-    tabs.setGeometry( 0, 25, w, h - 25 - baseymargin);
+    layout.addWidget( &tabs, layout.rowCount(), 0 );
     tabs.setObjectName( "menuTabs" );
 }
 
 TabScreen::TabScreen( ScreenMgr* mgr, int w, int h, const string & title, int baseymargin ) :
-    BasicScreen( *new TabScreenPrivate( this, w, h, title, baseymargin ) )
+    BasicScreen( *new TabScreenPrivate( this, w, h, title, baseymargin ), mgr )
 {}
 
 TabScreen::TabScreen( TabScreenPrivate & dd, ScreenMgr * mgr ) :
     BasicScreen( dd, mgr )
 {}
 
-QWidget* TabScreen::MakeTab( const string& title )
+QWidget* TabScreenPrivate::MakeTab( const string& title )
 {
     auto tab = new QWidget;
     tab->setWindowTitle( title.c_str() );
@@ -119,7 +125,7 @@ QWidget* TabScreen::MakeTab( const string& title )
 
 QWidget* TabScreen::AddTab( const string& title )
 {
-    auto tab = MakeTab( title );
+    auto tab = TabScreenPrivate::MakeTab( title );
     d_func()->tabs.addTab( tab, tab->windowTitle() );
     return tab;
 }
@@ -127,8 +133,8 @@ QWidget* TabScreen::AddTab( const string& title )
 /// Insert a Tab
 QWidget* TabScreen::AddTab( const string& title, int indx )
 {
-    auto tab = MakeTab( title );
-    d_func()->tabs.insertTab( indx, tab );
+    auto tab = TabScreenPrivate::MakeTab( title );
+    d_func()->tabs.insertTab( indx, tab, title.c_str() );
     return tab;
 }
 
@@ -140,13 +146,13 @@ void TabScreen::RemoveTab( QWidget* tab )
 
 void TabScreen::AddTab( QWidget* tab )
 {
-    d_func()->tabs.addTab( tab );
+    d_func()->tabs.addTab( tab, tab->windowTitle() );
 }
 
 /// Insert a Tab
 void TabScreen::AddTab( QWidget* tab, int indx )
 {
-    d_func()->tabs.addTab( indx, tab );
+    d_func()->tabs.insertTab( indx, tab, tab->windowTitle() );
 }
 
 /// Get Tab At Index
@@ -187,45 +193,151 @@ TabScreen::~TabScreen() {}
 //=====================================================================//
 //=====================================================================//
 //=====================================================================//
-GeomScreen::GeomScreen( ScreenMgr* mgr, int w, int h, const string & title ) :
-    TabScreen( mgr, w, h, title )
+
+class GeomScreenPrivate : public TabScreenPrivate
 {
-    // Set the window as a geom screen window
-    VSP_Window* vsp_win = dynamic_cast<VSP_Window*>(m_FLTK_Window);
+    Q_OBJECT
+    Q_DECLARE_PUBLIC( GeomScreen )
 
-    vsp_win->SetGeomScreenFlag( true );
+    //==== Gen Tab ====//
+    //==== Names, Color, Material ====//
+    StringInput m_NameInput;
+    ColorPicker m_ColorPicker;
+    Choice m_MaterialChoice;
+    TriggerButton m_CustomMaterialButton;
+    Choice m_ExportNameChoice;
 
-    Fl_Group* gen_tab = AddTab( "Gen" );
-    Fl_Group* xform_tab = AddTab( "XForm" );
-    Fl_Group* subsurf_tab = AddTab( "Sub" );
-    m_SubSurfTab_ind = m_TabGroupVec.size() - 1;
-    Fl_Group* gen_group = AddSubGroup( gen_tab, 5 );
-    Fl_Group* xform_group = AddSubGroup( xform_tab, 5 );
-    Fl_Group* subsurf_group = AddSubGroup( subsurf_tab, 5 );
+    //==== Tesselation ====//
+    SliderInput m_NumUSlider;
+    SliderInput m_NumWSlider;
+
+    //==== Mass Props ====//
+    Input m_DensityInput;
+    Input m_ShellMassAreaInput;
+    ToggleButton m_ThinShellButton;
+    Counter m_PriorCounter;
+
+    QListWidget* m_SetBrowser;
+
+    //==== XForm Tab ====//
+    ToggleButton m_XFormAbsoluteToggle;
+    ToggleButton m_XFormRelativeToggle;
+    ToggleRadioGroup m_XFormAbsRelToggle;
+
+    SliderAdjRange2Input m_XLocSlider;
+    SliderAdjRange2Input m_YLocSlider;
+    SliderAdjRange2Input m_ZLocSlider;
+
+    SliderAdjRange2Input m_XRotSlider;
+    SliderAdjRange2Input m_YRotSlider;
+    SliderAdjRange2Input m_ZRotSlider;
+
+    SliderAdjRangeInput m_RotOriginSlider;
+
+    CheckButtonBit m_XYSymToggle;
+    CheckButtonBit m_XZSymToggle;
+    CheckButtonBit m_YZSymToggle;
+
+    ToggleButton m_AxialNoneToggle;
+    ToggleButton m_AxialXToggle;
+    ToggleButton m_AxialYToggle;
+    ToggleButton m_AxialZToggle;
+    ToggleRadioGroup m_AxialToggleGroup;
+    SliderInput m_AxialNSlider;
+
+    SliderInput m_ScaleSlider;
+    TriggerButton m_ScaleResetButton;
+    TriggerButton m_ScaleAcceptButton;
+
+    //==== Attachments
+    ToggleButton m_TransNoneButton;
+    ToggleButton m_TransCompButton;
+    ToggleButton m_TransUVButton;
+    ToggleRadioGroup m_TransToggleGroup;
+
+    ToggleButton m_RotNoneButton;
+    ToggleButton m_RotCompButton;
+    ToggleButton m_RotUVButton;
+    ToggleRadioGroup m_RotToggleGroup;
+
+    SliderInput m_AttachUSlider;
+    SliderInput m_AttachVSlider;
+
+    //====== SubSurface Tab =====//
+    int m_SubSurfTab_ind;
+    UiGroup * m_CurSubDispGroup;
+    QListWidget* m_SubSurfBrowser;
+    TriggerButton m_DelSubSurfButton;
+    TriggerButton m_AddSubSurfButton;
+    Choice m_SubSurfChoice;
+
+    UiGroup m_SSCommonGroup;
+    StringInput m_SubNameInput;
+
+    // SS_Line
+    UiGroup m_SSLineGroup;
+    SliderInput m_SSLineConstSlider; // Either Constant U or W
+    ToggleButton m_SSLineConstUButton;
+    ToggleButton m_SSLineConstWButton;
+    ToggleRadioGroup m_SSLineConstToggleGroup;
+
+    ToggleButton m_SSLineGreaterToggle;
+    ToggleButton m_SSLineLessToggle;
+    ToggleRadioGroup m_SSLineTestToggleGroup;
+
+    // SS_Rectangle
+    UiGroup m_SSRecGroup;
+    SliderInput m_SSRecCentUSlider;
+    SliderInput m_SSRecCentWSlider;
+    SliderInput m_SSRecULenSlider;
+    SliderInput m_SSRecWLenSlider;
+    SliderAdjRangeInput m_SSRecThetaSlider;
+    ToggleButton m_SSRecInsideButton;
+    ToggleButton m_SSRecOutsideButton;
+    ToggleRadioGroup m_SSRecTestToggleGroup;
+
+    // SS_Ellipse
+    UiGroup m_SSEllGroup;
+    SliderInput m_SSEllCentUSlider;
+    SliderInput m_SSEllCentWSlider;
+    SliderInput m_SSEllULenSlider;
+    SliderInput m_SSEllWLenSlider;
+    SliderInput m_SSEllTessSlider;
+    SliderAdjRangeInput m_SSEllThetaSlider;
+    ToggleButton m_SSEllInsideButton;
+    ToggleButton m_SSEllOutsideButton;
+    ToggleRadioGroup m_SSEllTestToggleGroup;
+
+    GeomScreenPrivate( GeomScreen * q, int w, int h, const string & title );
+    bool Update() Q_DECL_OVERRIDE;
+    void SubSurfDispGroup( UiGroup * group );
+    void UpdateMaterialNames();
+};
+VSP_DEFINE_PRIVATE( GeomScreen )
+
+GeomScreenPrivate::GeomScreenPrivate( GeomScreen * q, int w, int h, const string &title ) :
+    TabScreenPrivate( q, w, h, title )
+{
+    QWidget* gen_tab = q->AddTab( "Gen" );
+    QWidget* xform_tab = q->AddTab( "XForm" );
+    QWidget* subsurf_tab = q->AddTab( "Sub" );
+    m_SubSurfTab_ind = tabs.count() - 1;
 
     //==== Gen Group Layout ====//
-    m_GenLayout.SetGroupAndScreen( gen_group, this );
-    m_GenLayout.AddDividerBox( "Name & Color" );
-    m_GenLayout.AddInput( m_NameInput, "Name:" );
-    m_GenLayout.AddYGap();
-    m_GenLayout.AddColorPicker( m_ColorPicker );
-    m_GenLayout.AddYGap();
-
+    UiBuilder gen( gen_tab );
+    gen.AddDividerBox( "Name & Color" );
+    gen.AddInput( m_NameInput, "Name:" );
+    gen.AddYGap();
+    gen.AddColorPicker( m_ColorPicker );
+    gen.AddYGap();
     UpdateMaterialNames();
 
-    m_GenLayout.SetFitWidthFlag( true );
-    m_GenLayout.SetSameLineFlag( true );
-
-    m_GenLayout.AddChoice( m_MaterialChoice, "Material:", m_GenLayout.GetButtonWidth() );
-
-    m_GenLayout.SetFitWidthFlag( false );
-    m_GenLayout.AddButton( m_CustomMaterialButton, "Custom" );
-    m_GenLayout.ForceNewLine();
-
-    m_GenLayout.SetFitWidthFlag( true );
-    m_GenLayout.SetSameLineFlag( false );
-
-    m_GenLayout.AddYGap();
+    gen.StartLabelAlignment();
+    gen.StartLine();
+    gen.SetNextExpanding();
+    gen.AddChoice( m_MaterialChoice, "Material:" );
+    gen.AddButton( m_CustomMaterialButton, "Custom" );
+    gen.AddYGap();
 
     m_ExportNameChoice.AddItem( "NONE" );
     m_ExportNameChoice.AddItem( "WING" );
@@ -233,93 +345,87 @@ GeomScreen::GeomScreen( ScreenMgr* mgr, int w, int h, const string & title ) :
     m_ExportNameChoice.AddItem( "TAIL" );
     m_ExportNameChoice.AddItem( "CANOPY" );
     m_ExportNameChoice.AddItem( "POD" );
-    m_GenLayout.AddChoice( m_ExportNameChoice, "Export Name:" );
-    m_GenLayout.AddYGap();
+    gen.SetNextExpanding();
+    gen.AddChoice( m_ExportNameChoice, "Export Name:" );
+    gen.AddYGap();
+    gen.EndLabelAlignment();
 
-    m_GenLayout.AddDividerBox( "Tesselation" );
-    m_GenLayout.AddSlider( m_NumUSlider, "Num_U", 100, " %5.0f" );
-    m_GenLayout.AddSlider( m_NumWSlider, "Num_W", 100, " %5.0f" );
+    gen.AddDividerBox( "Tesselation" );
+    gen.AddSlider( m_NumUSlider, "Num_U", 100, " %5.0f" );
+    gen.AddSlider( m_NumWSlider, "Num_W", 100, " %5.0f" );
 
-    m_GenLayout.AddYGap();
-    m_GenLayout.AddDividerBox( "Mass Properties" );
+    gen.AddYGap();
+    gen.AddDividerBox( "Mass Properties" );
 
-    //==== Two Columns ====//
-    m_GenLayout.AddSubGroupLayout( m_Density, gen_group->w() / 2 - 2, 2 * m_GenLayout.GetStdHeight() );
-    m_GenLayout.AddX( gen_group->w() / 2 + 2 );
-    m_GenLayout.AddSubGroupLayout( m_Shell,   gen_group->w() / 2 - 2, 2 * m_GenLayout.GetStdHeight() );
+    gen.StartLine();
 
-    m_Density.AddInput( m_DensityInput, "Density", " %7.5f" );
-    m_Density.AddCounter( m_PriorCounter, "Priority" );
+    gen.StartColumn();
+    gen.AddInput( m_DensityInput, "Density", " %7.5f" );
+    gen.AddCounter( m_PriorCounter, "Priority" );
+    gen.EndColumn();
 
-    m_Shell.AddButton( m_ThinShellButton, "Thin Shell" );
-    m_Shell.AddInput( m_ShellMassAreaInput, "Mass/Area", " %7.5f" );
+    gen.StartColumn();
+    gen.AddButton( m_ThinShellButton, "Thin Shell" );
+    gen.AddInput( m_ShellMassAreaInput, "Mass/Area", " %7.5f" );
+    gen.EndColumn();
 
-    m_GenLayout.ForceNewLine();
-    m_GenLayout.AddY( m_GenLayout.GetStdHeight() );
-    m_GenLayout.AddYGap();
+    gen.AddYGap();
 
-    m_GenLayout.AddDividerBox( "Set Export/Analysis" );
-    int remain_y = ( m_GenLayout.GetH() + m_GenLayout.GetStartY() ) - m_GenLayout.GetY();
-    m_SetBrowser = m_GenLayout.AddCheckBrowser( remain_y );
-    m_SetBrowser->callback( staticCB, this );
+    gen.AddDividerBox( "Set Export/Analysis" );
+    m_SetBrowser = gen.AddCheckBrowser();
 
     gen_tab->show();
 
     //==== XForm Layout ====//
-    m_XFormLayout.SetGroupAndScreen( xform_group, this );
-    m_XFormLayout.AddDividerBox( "Transforms" );
+    UiBuilder xform( xform_tab );
+    xform.AddDividerBox( "Transforms" );
 
+    xform.StartLabelAlignment();
+    xform.StartLine();
+    xform.AddLabel( "Coord System:" );
+    xform.AddButton( m_XFormRelativeToggle, "Rel" );
+    xform.AddButton( m_XFormAbsoluteToggle, "Abs" );
+    xform.AddYGap();
+    xform.EndLabelAlignment();
 
-    m_XFormLayout.SetFitWidthFlag( false );
-    m_XFormLayout.SetSameLineFlag( true );
-    m_XFormLayout.AddLabel( "Coord System:", 170 );
-    m_XFormLayout.SetButtonWidth( m_XFormLayout.GetRemainX() / 2 );
-    m_XFormLayout.AddButton( m_XFormRelativeToggle, "Rel" );
-    m_XFormLayout.AddButton( m_XFormAbsoluteToggle, "Abs" );
-    m_XFormLayout.ForceNewLine();
-
-    m_XFormAbsRelToggle.Init( this );
+    m_XFormAbsRelToggle.Init( q );
     m_XFormAbsRelToggle.AddButton( m_XFormAbsoluteToggle.GetFlButton() );
     m_XFormAbsRelToggle.AddButton( m_XFormRelativeToggle.GetFlButton() );
 
-    m_XFormLayout.SetFitWidthFlag( true );
-    m_XFormLayout.SetSameLineFlag( false );
-    m_XFormLayout.AddYGap();
+    xform.AddSlider( m_XLocSlider, "XLoc", 10.0, "%7.3f" );
+    xform.AddSlider( m_YLocSlider, "YLoc", 10.0, "%7.3f" );
+    xform.AddSlider( m_ZLocSlider, "ZLoc", 10.0, "%7.3f" );
+    xform.AddYGap();
+    xform.AddSlider( m_XRotSlider, "XRot", 10.0, "%7.3f" );
+    xform.AddSlider( m_YRotSlider, "YRot", 10.0, "%7.3f" );
+    xform.AddSlider( m_ZRotSlider, "ZRot", 10.0, "%7.3f" );
+    xform.AddYGap();
 
-    m_XFormLayout.SetButtonWidth( 50 );
-    m_XFormLayout.AddSlider( m_XLocSlider, "XLoc", 10.0, "%7.3f" );
-    m_XFormLayout.AddSlider( m_YLocSlider, "YLoc", 10.0, "%7.3f" );
-    m_XFormLayout.AddSlider( m_ZLocSlider, "ZLoc", 10.0, "%7.3f" );
-    m_XFormLayout.AddYGap();
-    m_XFormLayout.AddSlider( m_XRotSlider, "XRot", 10.0, "%7.3f" );
-    m_XFormLayout.AddSlider( m_YRotSlider, "YRot", 10.0, "%7.3f" );
-    m_XFormLayout.AddSlider( m_ZRotSlider, "ZRot", 10.0, "%7.3f" );
-    m_XFormLayout.AddYGap();
-    m_XFormLayout.SetButtonWidth( 100 );
-    m_XFormLayout.AddSlider( m_RotOriginSlider, "Rot Origin(X)", 1.0, "%5.3f" );
-    m_XFormLayout.AddYGap();
+    xform.StartLabelAlignment();
+    xform.StartLine();
+    xform.AddSlider( m_RotOriginSlider, "Rot Origin(X)", 1.0, "%5.3f" );
+    xform.EndLine();
+    xform.AddYGap();
+    xform.EndLabelAlignment();
 
-    m_XFormLayout.AddDividerBox( "Symmetry" );
-    m_XFormLayout.SetFitWidthFlag( false );
-    m_XFormLayout.SetSameLineFlag( true );
+    xform.AddDividerBox( "Symmetry" );
 
-    m_XFormLayout.AddLabel( "Planar:", 74 );
-    m_XFormLayout.SetButtonWidth( m_XFormLayout.GetRemainX() / 3 );
-    m_XFormLayout.AddButton( m_XYSymToggle, "XY", vsp::SYM_XY );
-    m_XFormLayout.AddButton( m_XZSymToggle, "XZ", vsp::SYM_XZ );
-    m_XFormLayout.AddButton( m_YZSymToggle, "YZ", vsp::SYM_YZ );
-    m_XFormLayout.ForceNewLine();
-    m_XFormLayout.AddYGap();
+    xform.StartLine();
+    xform.AddLabel( "Planar:" );
+    xform.AddButton( m_XYSymToggle, "XY", vsp::SYM_XY );
+    xform.AddButton( m_XZSymToggle, "XZ", vsp::SYM_XZ );
+    xform.AddButton( m_YZSymToggle, "YZ", vsp::SYM_YZ );
+    xform.AddYGap();
 
-    m_XFormLayout.AddLabel( "Axial:", 74 );
-    m_XFormLayout.SetButtonWidth( m_XFormLayout.GetRemainX() / 4 );
-    m_XFormLayout.AddButton( m_AxialNoneToggle, "None" );
-    m_XFormLayout.AddButton( m_AxialXToggle, "X" );
-    m_XFormLayout.AddButton( m_AxialYToggle, "Y" );
-    m_XFormLayout.AddButton( m_AxialZToggle, "Z" );
-    m_XFormLayout.ForceNewLine();
+    xform.StartLine();
+    xform.AddLabel( "Axial:" );
+    xform.AddButton( m_AxialNoneToggle, "None" );
+    xform.AddButton( m_AxialXToggle, "X" );
+    xform.AddButton( m_AxialYToggle, "Y" );
+    xform.AddButton( m_AxialZToggle, "Z" );
+    xform.EndLine();
 
-    m_AxialToggleGroup.Init( this );
+    m_AxialToggleGroup.Init( q );
     m_AxialToggleGroup.AddButton( m_AxialNoneToggle.GetFlButton() );
     m_AxialToggleGroup.AddButton( m_AxialXToggle.GetFlButton() );
     m_AxialToggleGroup.AddButton( m_AxialYToggle.GetFlButton() );
@@ -333,212 +439,164 @@ GeomScreen::GeomScreen( ScreenMgr* mgr, int w, int h, const string & title ) :
     axial_val_map.push_back( vsp::SYM_ROT_Z );
     m_AxialToggleGroup.SetValMapVec( axial_val_map );
 
-    m_XFormLayout.InitWidthHeightVals();
-    m_XFormLayout.SetFitWidthFlag( true );
-    m_XFormLayout.SetSameLineFlag( false );
+    xform.AddSlider( m_AxialNSlider, "N", 100, " %5.0f" );
+    xform.AddYGap();
 
-    m_XFormLayout.AddSlider( m_AxialNSlider, "N", 100, " %5.0f" );
-    m_XFormLayout.AddYGap();
+    xform.AddDividerBox( "Scale Factor" );
 
-    m_XFormLayout.AddDividerBox( "Scale Factor" );
-    m_XFormLayout.SetFitWidthFlag( false );
-    m_XFormLayout.SetSameLineFlag( true );
-    m_XFormLayout.SetButtonWidth( 50 );
-    m_XFormLayout.SetSliderWidth( 70 );
+    xform.StartLine();
+    xform.AddSlider( m_ScaleSlider, "Scale", 1, " %5.4f" );
+    xform.AddButton( m_ScaleResetButton, "Reset" );
+    xform.AddButton( m_ScaleAcceptButton, "Accept" );
+    xform.AddYGap();
 
-    m_XFormLayout.AddSlider( m_ScaleSlider, "Scale", 1, " %5.4f" );
-    m_XFormLayout.SetButtonWidth( ( m_XFormLayout.GetRemainX() ) / 2 );
-    m_XFormLayout.AddButton( m_ScaleResetButton, "Reset" );
-    m_XFormLayout.AddButton( m_ScaleAcceptButton, "Accept" );
-    m_XFormLayout.ForceNewLine();
-    m_XFormLayout.AddYGap();
+    xform.AddDividerBox( "Attach To Parent" );
 
-    m_XFormLayout.InitWidthHeightVals();
-    m_XFormLayout.SetFitWidthFlag( true );
-    m_XFormLayout.SetSameLineFlag( false );
-    m_XFormLayout.AddDividerBox( "Attach To Parent" );
+    xform.StartLine();
+    xform.AddLabel( "Translate:" );
+    xform.AddButton( m_TransNoneButton, "None" );
+    xform.AddButton( m_TransCompButton, "Comp" );
+    xform.AddButton( m_TransUVButton, "UW" );
+    xform.AddYGap();
 
-    m_XFormLayout.SetFitWidthFlag( false );
-    m_XFormLayout.SetSameLineFlag( true );
-
-    m_XFormLayout.AddLabel( "Translate:", 74 );
-    m_XFormLayout.SetButtonWidth( ( m_XFormLayout.GetRemainX() ) / 3 );
-    m_XFormLayout.AddButton( m_TransNoneButton, "None" );
-    m_XFormLayout.AddButton( m_TransCompButton, "Comp" );
-    m_XFormLayout.AddButton( m_TransUVButton, "UW" );
-    m_XFormLayout.ForceNewLine();
-    m_XFormLayout.AddYGap();
-
-    m_TransToggleGroup.Init( this );
+    m_TransToggleGroup.Init( q );
     m_TransToggleGroup.AddButton( m_TransNoneButton.GetFlButton() );
     m_TransToggleGroup.AddButton( m_TransCompButton.GetFlButton() );
     m_TransToggleGroup.AddButton( m_TransUVButton.GetFlButton() );
 
-    m_XFormLayout.AddLabel( "Rotate:", 74 );
-    m_XFormLayout.AddButton( m_RotNoneButton, "None" );
-    m_XFormLayout.AddButton( m_RotCompButton, "Comp" );
-    m_XFormLayout.AddButton( m_RotUVButton, "UW" );
-    m_XFormLayout.ForceNewLine();
-    m_XFormLayout.AddYGap();
+    xform.AddLabel( "Rotate:" );
+    xform.AddButton( m_RotNoneButton, "None" );
+    xform.AddButton( m_RotCompButton, "Comp" );
+    xform.AddButton( m_RotUVButton, "UW" );
+    xform.AddYGap();
 
-    m_RotToggleGroup.Init( this );
+    m_RotToggleGroup.Init( q );
     m_RotToggleGroup.AddButton( m_RotNoneButton.GetFlButton() );
     m_RotToggleGroup.AddButton( m_RotCompButton.GetFlButton() );
     m_RotToggleGroup.AddButton( m_RotUVButton.GetFlButton() );
 
-    m_XFormLayout.SetFitWidthFlag( true );
-    m_XFormLayout.SetSameLineFlag( false );
-
-    m_XFormLayout.AddSlider( m_AttachUSlider, "U", 1, " %5.4f" );
-    m_XFormLayout.AddSlider( m_AttachVSlider, "W", 1, " %5.4f" );
-
+    xform.AddSlider( m_AttachUSlider, "U", 1, " %5.4f" );
+    xform.AddSlider( m_AttachVSlider, "W", 1, " %5.4f" );
 
     //=============== SubSurface Tab ===================//
-    m_CurSubDispGroup = NULL;
-    m_SubSurfLayout.SetGroupAndScreen( subsurf_group, this );
-    m_SubSurfLayout.AddDividerBox( "Sub-Surface List" );
+    UiBuilder subsurf( subsurf_tab );
+    subsurf.AddDividerBox( "Sub-Surface List" );
+    m_SubSurfBrowser = new QListWidget();
+    subsurf.AddBrowser( m_SubSurfBrowser );
+    subsurf.AddYGap();
 
-    int browser_h = 100;
-    m_SubSurfBrowser = new Fl_Browser( m_SubSurfLayout.GetX(), m_SubSurfLayout.GetY(), m_SubSurfLayout.GetW(), browser_h );
-    m_SubSurfBrowser->type( 1 );
-    m_SubSurfBrowser->labelfont( 13 );
-    m_SubSurfBrowser->labelsize( 12 );
-    m_SubSurfBrowser->textsize( 12 );
-    m_SubSurfBrowser->callback( staticScreenCB, this );
-    subsurf_group->add( m_SubSurfBrowser );
-    m_SubSurfLayout.AddY( browser_h );
-    m_SubSurfLayout.AddYGap();
-
-    m_SubSurfLayout.AddButton( m_DelSubSurfButton, "Delete" );
-    m_SubSurfLayout.AddYGap();
-
-    m_SubSurfLayout.SetFitWidthFlag( false );
-    m_SubSurfLayout.SetSameLineFlag( true );
+    subsurf.AddButton( m_DelSubSurfButton, "Delete" );
+    subsurf.AddYGap();
 
     m_SubSurfChoice.AddItem( SubSurface::GetTypeName( SubSurface::SS_LINE ) );
     m_SubSurfChoice.AddItem( SubSurface::GetTypeName( SubSurface::SS_RECTANGLE ) );
     m_SubSurfChoice.AddItem( SubSurface::GetTypeName( SubSurface::SS_ELLIPSE ) );
 
-    int b_width = m_SubSurfLayout.GetRemainX();
-    m_SubSurfLayout.SetButtonWidth( (int)(b_width * 0.4) );
-    m_SubSurfLayout.SetChoiceButtonWidth( b_width / 5 );
-    m_SubSurfLayout.SetSliderWidth( (int)(b_width * 0.4) );
-    m_SubSurfLayout.AddChoice( m_SubSurfChoice, "Type" );
-    m_SubSurfLayout.AddButton( m_AddSubSurfButton, "Add" );
+    subsurf.StartLine();
+    subsurf.AddChoice( m_SubSurfChoice, "Type" );
+    subsurf.AddButton( m_AddSubSurfButton, "Add" );
+    subsurf.AddYGap();
 
-    m_SubSurfLayout.SetFitWidthFlag( true );
-    m_SubSurfLayout.SetSameLineFlag( false );
-    m_SubSurfLayout.ForceNewLine();
-
-    m_SubSurfLayout.AddYGap();
-
-    m_SSCommonGroup.SetGroupAndScreen( AddSubGroup( subsurf_tab, 5 ), this );
-    m_SSCommonGroup.SetY( m_SubSurfLayout.GetY() );
-    m_SSCommonGroup.AddDividerBox( "Sub-Surface Parameters" );
-    m_SSCommonGroup.AddInput( m_SubNameInput, "Name" );
+    subsurf.StartGroup();
+    subsurf.AddDividerBox( "Sub-Surface Parameters" );
+    subsurf.AddInput( m_SubNameInput, "Name" );
+    m_SSCommonGroup = subsurf.EndGroup();
 
     // Indivdual SubSurface Parameters
-    int start_y = m_SSCommonGroup.GetY();
+    subsurf.StartStack();
 
     //==== SSLine ====//
-    m_SSLineGroup.SetGroupAndScreen( AddSubGroup( subsurf_tab, 5 ), this );
-    m_SSLineGroup.SetY( start_y );
+    subsurf.StartStackPage();
+    subsurf.StartLabelAlignment();
+    subsurf.StartLine();
+    subsurf.AddLabel( "Line Type" );
+    subsurf.AddButton( m_SSLineConstUButton, "U" );
+    subsurf.AddButton( m_SSLineConstWButton, "W" );
+    subsurf.EndLine();
 
-    int remain_x = m_SubSurfLayout.GetRemainX();
-
-    m_SSLineGroup.SetFitWidthFlag( false );
-    m_SSLineGroup.SetSameLineFlag( true );
-    m_SSLineGroup.AddLabel( "Line Type", remain_x / 3 );
-    m_SSLineGroup.SetButtonWidth( remain_x / 3 );
-    m_SSLineGroup.AddButton( m_SSLineConstUButton, "U" );
-    m_SSLineGroup.AddButton( m_SSLineConstWButton, "W" );
-
-    m_SSLineConstToggleGroup.Init( this );
+    m_SSLineConstToggleGroup.Init( q );
     m_SSLineConstToggleGroup.AddButton( m_SSLineConstUButton.GetFlButton() );
     m_SSLineConstToggleGroup.AddButton( m_SSLineConstWButton.GetFlButton() );
 
-    m_SSLineGroup.ForceNewLine();
-    m_SSLineGroup.AddLabel( "Test", remain_x / 3 );
-    m_SSLineGroup.AddButton( m_SSLineGreaterToggle, "Greater" );
-    m_SSLineGroup.AddButton( m_SSLineLessToggle, "Less" );
+    subsurf.StartLine();
+    subsurf.AddLabel( "Test" );
+    subsurf.AddButton( m_SSLineGreaterToggle, "Greater" );
+    subsurf.AddButton( m_SSLineLessToggle, "Less" );
+    subsurf.EndLine();
 
-    m_SSLineTestToggleGroup.Init( this );
+    m_SSLineTestToggleGroup.Init( q );
     m_SSLineTestToggleGroup.AddButton( m_SSLineGreaterToggle.GetFlButton() );
     m_SSLineTestToggleGroup.AddButton( m_SSLineLessToggle.GetFlButton() );
 
-    m_SSLineGroup.SetFitWidthFlag( true );
-    m_SSLineGroup.SetSameLineFlag( false );
-    m_SSLineGroup.ForceNewLine();
-    m_SSLineGroup.AddSlider( m_SSLineConstSlider, "Value", 1, "%5.4f" );
+    subsurf.AddSlider( m_SSLineConstSlider, "Value", 1, "%5.4f" );
+    m_SSLineGroup = subsurf.EndStackPage();
 
     //==== SSRectangle ====//
-    m_SSRecGroup.SetGroupAndScreen( AddSubGroup( subsurf_tab, 5 ), this );
-    m_SSRecGroup.SetY( start_y );
-    remain_x = m_SSRecGroup.GetRemainX();
+    subsurf.StartStackPage();
+    subsurf.StartLabelAlignment();
+    subsurf.StartLine();
+    subsurf.AddLabel( "Tag" );
+    subsurf.AddButton( m_SSRecInsideButton, "Inside" );
+    subsurf.AddButton( m_SSRecOutsideButton, "Outside" );
+    subsurf.EndLine();
 
-    m_SSRecGroup.SetFitWidthFlag( false );
-    m_SSRecGroup.SetSameLineFlag( true );
-    m_SSRecGroup.AddLabel( "Tag", remain_x / 3 );
-    m_SSRecGroup.SetButtonWidth( remain_x / 3 );
-    m_SSRecGroup.AddButton( m_SSRecInsideButton, "Inside" );
-    m_SSRecGroup.AddButton( m_SSRecOutsideButton, "Outside" );
-
-    m_SSRecTestToggleGroup.Init( this );
+    m_SSRecTestToggleGroup.Init( q );
     m_SSRecTestToggleGroup.AddButton( m_SSRecInsideButton.GetFlButton() );
     m_SSRecTestToggleGroup.AddButton( m_SSRecOutsideButton.GetFlButton() );
 
-    m_SSRecGroup.SetFitWidthFlag( true );
-    m_SSRecGroup.SetSameLineFlag( false );
-    m_SSRecGroup.ForceNewLine();
-
-    m_SSRecGroup.AddSlider( m_SSRecCentUSlider, "Center U", 1, "%5.4f" );
-    m_SSRecGroup.AddSlider( m_SSRecCentWSlider, "Center W", 1, "%5.4f" );
-    m_SSRecGroup.AddSlider( m_SSRecULenSlider, "U Length", 1, "%5.4f" );
-    m_SSRecGroup.AddSlider( m_SSRecWLenSlider, "W Length", 1, "%5.4f" );
-    m_SSRecGroup.AddSlider( m_SSRecThetaSlider, "Theta", 25, "%5.4f" );
+    subsurf.AddSlider( m_SSRecCentUSlider, "Center U", 1, "%5.4f" );
+    subsurf.AddSlider( m_SSRecCentWSlider, "Center W", 1, "%5.4f" );
+    subsurf.AddSlider( m_SSRecULenSlider, "U Length", 1, "%5.4f" );
+    subsurf.AddSlider( m_SSRecWLenSlider, "W Length", 1, "%5.4f" );
+    subsurf.AddSlider( m_SSRecThetaSlider, "Theta", 25, "%5.4f" );
+    m_SSRecGroup = subsurf.EndStackPage();
 
     //==== SS_Ellipse ====//
-    m_SSEllGroup.SetGroupAndScreen( AddSubGroup( subsurf_tab, 5 ), this );
-    m_SSEllGroup.SetY( start_y );
-    remain_x = m_SSEllGroup.GetRemainX();
+    subsurf.StartStackPage();
+    subsurf.StartLabelAlignment();
 
-    m_SSEllGroup.SetFitWidthFlag( false );
-    m_SSEllGroup.SetSameLineFlag( true );
-    m_SSEllGroup.AddLabel( "Tag", remain_x / 3 );
-    m_SSEllGroup.SetButtonWidth( remain_x / 3 );
-    m_SSEllGroup.AddButton( m_SSEllInsideButton, "Inside" );
-    m_SSEllGroup.AddButton( m_SSEllOutsideButton, "Outside" );
+    subsurf.StartLine();
+    subsurf.AddLabel( "Tag" );
+    subsurf.AddButton( m_SSEllInsideButton, "Inside" );
+    subsurf.AddButton( m_SSEllOutsideButton, "Outside" );
+    subsurf.EndLine();
 
-    m_SSEllTestToggleGroup.Init( this );
+    m_SSEllTestToggleGroup.Init( q );
     m_SSEllTestToggleGroup.AddButton( m_SSEllInsideButton.GetFlButton() );
     m_SSEllTestToggleGroup.AddButton( m_SSEllOutsideButton.GetFlButton() );
 
-    m_SSEllGroup.SetFitWidthFlag( true );
-    m_SSEllGroup.SetSameLineFlag( false );
-    m_SSEllGroup.ForceNewLine();
-
-    m_SSEllGroup.AddSlider( m_SSEllTessSlider, "Num Points", 100, "%5.0f" );
-    m_SSEllGroup.AddSlider( m_SSEllCentUSlider, "Center U", 1, "%5.4f" );
-    m_SSEllGroup.AddSlider( m_SSEllCentWSlider, "Center W", 1, "%5.4f" );
-    m_SSEllGroup.AddSlider( m_SSEllULenSlider, "U Length", 1, "%5.4f" );
-    m_SSEllGroup.AddSlider( m_SSEllWLenSlider, "W Length", 1, "%5.4f" );
-    m_SSEllGroup.AddSlider( m_SSEllThetaSlider, "Theta", 25, "%5.4f" );
-
+    subsurf.AddSlider( m_SSEllTessSlider, "Num Points", 100, "%5.0f" );
+    subsurf.AddSlider( m_SSEllCentUSlider, "Center U", 1, "%5.4f" );
+    subsurf.AddSlider( m_SSEllCentWSlider, "Center W", 1, "%5.4f" );
+    subsurf.AddSlider( m_SSEllULenSlider, "U Length", 1, "%5.4f" );
+    subsurf.AddSlider( m_SSEllWLenSlider, "W Length", 1, "%5.4f" );
+    subsurf.AddSlider( m_SSEllThetaSlider, "Theta", 25, "%5.4f" );
+    m_SSEllGroup = subsurf.EndStackPage();
 }
 
-bool GeomScreen::Update()
+GeomScreen::GeomScreen( ScreenMgr* mgr, int w, int h, const string & title ) :
+    TabScreen( mgr, w, h, title )
 {
-    assert( m_ScreenMgr );
-    Geom* geom_ptr = m_ScreenMgr->GetCurrGeom();
+#if 0
+    // Set the window as a geom screen window
+    VSP_Window* vsp_win = dynamic_cast<VSP_Window*>(m_FLTK_Window);
+    vsp_win->SetGeomScreenFlag( true );
+#endif
+}
+
+bool GeomScreenPrivate::Update()
+{
+    Q_Q( GeomScreen );
+    Geom* geom_ptr = GetScreenMgr()->GetCurrGeom();
     if ( !geom_ptr )
     {
-        Hide();
+        q->Hide();
         return false;
     }
 
     char str[256];
 
-    TabScreen::Update();
+    TabScreenPrivate::Update();
 
     //==== Name ===//
     m_NameInput.Update(  geom_ptr->GetName() );
@@ -624,7 +682,7 @@ bool GeomScreen::Update()
 
     //==== Set Browser ====//
     geom_ptr->UpdateSets();
-    vector< string > set_name_vec = m_ScreenMgr->GetVehiclePtr()->GetSetNameVec();
+    vector< string > set_name_vec = veh()->GetSetNameVec();
     vector< bool > set_flag_vec = geom_ptr->GetSetFlags();
 
     assert( set_name_vec.size() == set_flag_vec.size() );
@@ -633,7 +691,10 @@ bool GeomScreen::Update()
     m_SetBrowser->clear();
     for ( int i = SET_SHOWN ; i < ( int )set_name_vec.size() ; i++ )
     {
-        m_SetBrowser->add( set_name_vec[i].c_str(), static_cast<int>( set_flag_vec[i] ) );
+        QListWidgetItem * item = new QListWidgetItem( set_name_vec[i].c_str() );
+        item->setFlags( Qt::ItemIsSelectable | Qt::ItemIsUserCheckable );
+        item->setCheckState( set_flag_vec[i] ? Qt::Checked : Qt::Unchecked );
+        m_SetBrowser->addItem( item );
     }
 
     //================= SubSurfaces Tab ===================//
@@ -683,7 +744,7 @@ bool GeomScreen::Update()
     }
     else
     {
-        SubSurfDispGroup( NULL );
+        SubSurfDispGroup( 0 );
     }
 
     //==== SubSurfBrowser ====//
@@ -716,7 +777,7 @@ bool GeomScreen::Update()
     return true;
 }
 
-void GeomScreen::UpdateMaterialNames()
+void GeomScreenPrivate::UpdateMaterialNames()
 {
     std::vector<std::string> matNames;
     matNames = MaterialMgr.GetNames();
@@ -816,7 +877,7 @@ void GeomScreen::GuiDeviceCallBack( GuiDevice* device )
     m_ScreenMgr->SetUpdateFlag( true );
 }
 
-void GeomScreen::SubSurfDispGroup( GroupLayout* group )
+void GeomScreenPrivate::SubSurfDispGroup( UiGroup* group )
 {
     if ( m_CurSubDispGroup == group && group )
     {
@@ -829,7 +890,6 @@ void GeomScreen::SubSurfDispGroup( GroupLayout* group )
     m_SSEllGroup.Hide();
 
     m_CurSubDispGroup = group;
-
     if ( group )
     {
         group->Show();
