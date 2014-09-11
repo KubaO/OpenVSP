@@ -31,64 +31,51 @@
 #include "SubGLWindow.h"
 #include <QtGlobal>
 
-#include "VspScreen.h"
+#include "VspScreenQt.h"
 #include "GroupLayout.h"
 
 #include "VSPWindow.h"
 
+class QWidget;
+class QScrollArea;
 class ScreenMgr;
 class Vehicle;
 class Geom;
 
-//==== Basic Screen ====//
-class BasicScreen : public VspScreenFLTK
+class BasicScreenPrivate;
+/// A Screen with a Title
+class BasicScreen : public VspScreenQt
 {
+    VSP_DECLARE_PRIVATE( BasicScreen )
 public:
-
-    BasicScreen( ScreenMgr* mgr, int w, int h, const string & title  );
-    virtual ~BasicScreen();
-
-    virtual void SetTitle( const string& title );
-
+    BasicScreen( ScreenMgr*, int w, int h, const std::string & title );
+    ~BasicScreen();
+    void SetTitle( const string & title );
 protected:
-
-    Fl_Box* m_FL_TitleBox;
-
-    string m_Title;
-
+    BasicScreen( BasicScreenPrivate&, ScreenMgr* );
 };
 
-//==== Tab Screen ====//
+class TabScreenPrivate;
 class TabScreen : public BasicScreen
 {
+    VSP_DECLARE_PRIVATE( TabScreen )
 public:
-
     TabScreen( ScreenMgr* mgr, int w, int h, const string & title, int baseymargin = 0 );
-    virtual ~TabScreen();
+    ~TabScreen();
 
-    virtual Fl_Group* AddTab( const string& title );
-    virtual Fl_Group* AddTab( const string& title, int indx );
-    virtual Fl_Group* GetTab( int index );
+    virtual QWidget* AddTab( const string& title );
+    virtual QWidget* AddTab( const string& title, int indx );
+    virtual QWidget* GetTab( int index );
 
-    virtual void AddTab( Fl_Group* grp );
-    virtual void AddTab( Fl_Group* grp, int indx );
-    virtual void RemoveTab( Fl_Group* grp );
+    virtual void AddTab( QWidget* grp );
+    virtual void AddTab( QWidget* grp, int indx );
+    virtual void RemoveTab( QWidget* grp );
 
-    //==== Create A Sub Group In Tab - With Border in Pixels ====//
-    virtual Fl_Group* AddSubGroup( Fl_Group* group, int border  );
-    virtual Fl_Scroll* AddSubScroll( Fl_Group* group, int border, int lessh = 0  );
-
-
+    /// Create A Sub Group In Tab - With Border in Pixels
+    virtual QWidget* AddSubGroup( QWidget* group, int border  );
+    virtual QScrollArea* AddSubScroll( QWidget* group, int border, int lessh = 0  );
 protected:
-
-    virtual Fl_Group* MakeTab( const string& title );
-
-    enum { TAB_H = 25 };
-
-    Fl_Tabs* m_MenuTabs;
-
-    vector< Fl_Group* > m_TabGroupVec;
-
+    TabScreen( TabScreenPrivate &, ScreenMgr * );
 };
 
 //==== Geom Screen ====//

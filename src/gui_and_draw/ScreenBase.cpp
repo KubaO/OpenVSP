@@ -21,6 +21,10 @@
 #include "ScreenMgr.h"
 #include "MaterialEditScreen.h"
 #include "VSPWindow.h"
+#include "VspScreenQt_p.h"
+#include <QLabel>
+#include <QTabWidget>
+#include <QScrollArea>
 
 using namespace vsp;
 using std::map;
@@ -29,172 +33,156 @@ using std::map;
 //=====================================================================//
 //=====================================================================//
 
-//==== Constructor ====//
-BasicScreen::BasicScreen( ScreenMgr* mgr, int w, int h, const string & title  ) : VspScreenFLTK( mgr )
+/// \todo Should use VSP_Window
+class BasicScreenPrivate : public QWidget, public VspScreenQtPrivate
 {
-    //==== Window ====//
-    m_FLTK_Window = new VSP_Window( w, h );
-    m_FLTK_Window->resizable( m_FLTK_Window );
-    VspScreenFLTK::SetFlWindow( m_FLTK_Window );
+    Q_OBJECT
+    Q_DECLARE_PUBLIC( BasicScreen )
+    Q_PRIVATE_SLOT( self(), void SetUpdateFlag() )
 
-    //==== Title Box ====//
-    m_FL_TitleBox = new Fl_Box( 2, 2, w - 4, 20 );
-    m_FL_TitleBox->box( FL_ROUNDED_BOX );
-    m_FL_TitleBox->labelfont( 1 );
-    m_FL_TitleBox->labelsize( 16 );
-    m_FL_TitleBox->labelcolor( FL_SELECTION_COLOR );
+    QLabel titleBox;
 
-    SetTitle( title );
+    BasicScreenPrivate( BasicScreen *, int w, int h, const string & title );
+    QWidget * widget() Q_DECL_OVERRIDE { return this; }
+};
+VSP_DEFINE_PRIVATE( BasicScreen )
 
+BasicScreenPrivate::BasicScreenPrivate( BasicScreen * q, int w, int h, const string & title ) :
+    VspScreenQtPrivate( q ),
+    titleBox( this )
+{
+    resize( w, h );
+    d->titleBox.setGeometry( 2, 2, w - 4, 20 );
+    d->titleBox.setObjectName( "screenHeader" );
+    q->SetTitle( title );
 }
 
-//==== Destructor ====//
-BasicScreen::~BasicScreen()
-{
-    delete m_FLTK_Window;
-}
 
-//==== Set Title Name on Window And Box ====//
+BasicScreen::BasicScreen( ScreenMgr* mgr, int w, int h, const string & title  ) :
+    VspScreenQt( new BasicScreenPrivate( this, w, h, title ), mgr )
+{}
+
+BasicScreen::BasicScreen( BasicScreenPrivate & dd, ScreenMgr * mgr ) :
+    VspScreenQt( dd, mgr )
+{}
+
+/// Set Title Name on Window And Box
 void BasicScreen::SetTitle( const string& title )
 {
-    if ( title != m_Title )
+    Q_D( BasicScreen );
+    if ( title != d->titleBox.text().toStdString() )
     {
-        m_Title = title;
-        m_FL_TitleBox->copy_label( m_Title.c_str() );
+        d->titleBox.setText( title.c_str() );
+        d->setWindowTitle( title );
     }
 }
 
+BasicScreen::~BasicScreen() {}
+
 //=====================================================================//
 //=====================================================================//
 //=====================================================================//
 
-//==== Constructor ====//
+class TabScreenPrivate : public BasicScreenPrivate
+{
+    Q_DECLARE_PUBLIC( TabScreen )
+    enum { TAB_H = 25 };
+
+    QTabWidget tabs;
+
+    TabScreenPrivate( TabScreen *, int w, int h, const std::string & title, int );
+    virtual QWidget* MakeTab( const string& title );
+};
+
+TabScreenPrivate( TabScreen * q, int w, int h, const std::string & title, int baseymargin ) :
+    BasicScreenPrivate( q, w, h, title ),
+    tabs( this )
+{
+    tabs.setGeometry( 0, 25, w, h - 25 - baseymargin);
+    tabs.setObjectName( "menuTabs" );
+}
+
 TabScreen::TabScreen( ScreenMgr* mgr, int w, int h, const string & title, int baseymargin ) :
-    BasicScreen( mgr, w, h, title )
+    BasicScreen( *new TabScreenPrivate( this, w, h, title, baseymargin ) )
+{}
+
+TabScreen::TabScreen( TabScreenPrivate & dd, ScreenMgr * mgr ) :
+    BasicScreen( dd, mgr )
+{}
+
+QWidget* TabScreen::MakeTab( const string& title )
 {
-    //==== Menu Tabs ====//
-    m_MenuTabs = new Fl_Tabs( 0, 25, w, h - 25 - baseymargin );
-    m_MenuTabs->labelcolor( FL_BLUE );
+    auto tab = new QWidget;
+    tab->setWindowTitle( title.c_str() );
+    return tab;
 }
 
-//==== Destructor ====//
-TabScreen::~TabScreen()
+QWidget* TabScreen::AddTab( const string& title )
 {
+    auto tab = MakeTab( title );
+    d_func()->tabs.addTab( tab, tab->windowTitle() );
+    return tab;
 }
 
-Fl_Group* TabScreen::MakeTab( const string& title )
+/// Insert a Tab
+QWidget* TabScreen::AddTab( const string& title, int indx )
 {
-    int rx, ry, rw, rh;
-    m_MenuTabs->client_area( rx, ry, rw, rh, TAB_H );
-
-    Fl_Group* grp = new Fl_Group( rx, ry, rw, rh );
-    grp->copy_label( title.c_str() );
-    grp->selection_color( FL_GRAY );
-    grp->labelfont( 1 );
-    grp->labelcolor( FL_BLACK );
-    grp->hide();
-    m_TabGroupVec.push_back( grp );
-
-    return grp;
+    auto tab = MakeTab( title );
+    d_func()->tabs.insertTab( indx, tab );
+    return tab;
 }
 
-//==== Add Tab ====//
-Fl_Group* TabScreen::AddTab( const string& title )
+void TabScreen::RemoveTab( QWidget* tab )
 {
-    Fl_Group* grp = MakeTab( title );
-
-    m_MenuTabs->add( grp );
-
-    return grp;
+    Q_D( TabScreen );
+    d->tabs.removeTab( d->tabs.indexOf( tab ) );
 }
 
-//==== Add Tab ====//
-Fl_Group* TabScreen::AddTab( const string& title, int indx )
+void TabScreen::AddTab( QWidget* tab )
 {
-    Fl_Group* grp = MakeTab( title );
-
-    m_MenuTabs->insert( *grp, indx );
-
-    return grp;
+    d_func()->tabs.addTab( tab );
 }
 
-//==== Remove Tab ====//
-void TabScreen::RemoveTab( Fl_Group* grp )
+/// Insert a Tab
+void TabScreen::AddTab( QWidget* tab, int indx )
 {
-    m_MenuTabs->remove( grp );
+    d_func()->tabs.addTab( indx, tab );
 }
 
-//==== Add Tab ====//
-void TabScreen::AddTab( Fl_Group* grp )
+/// Get Tab At Index
+QWidget * TabScreen::GetTab( int index )
 {
-    m_MenuTabs->add( grp );
+    return d_func()->tabs.widget( index );
 }
 
-//==== Insert Tab ====//
-void TabScreen::AddTab( Fl_Group* grp, int indx )
+QWidget* TabScreen::AddSubGroup( QWidget* group, int border )
 {
-    m_MenuTabs->insert( *grp, indx );
-}
+    Q_D( TabScreen );
+    if ( !group ) return NULL;
 
-
-//==== Get Tab At Index ====//
-Fl_Group* TabScreen::GetTab( int index )
-{
-    if ( index >= 0 && index < ( int )m_TabGroupVec.size() )
-    {
-        return m_TabGroupVec[index];
-    }
-
-    return NULL;
-}
-
-//==== Add A Sub Group To Tab ====//
-Fl_Group* TabScreen::AddSubGroup( Fl_Group* group, int border )
-{
-    if ( !group )
-    {
-        return NULL;
-    }
-
-    int rx, ry, rw, rh;
-    m_MenuTabs->client_area( rx, ry, rw, rh, TAB_H );
-
-    int x = rx + border;
-    int y = ry + border;
-    int w = rw - 2 * border;
-    int h = rh - 2 * border;
-
-    Fl_Group* sub_group = new Fl_Group( x, y, w, h );
+    QRect cli = group->rect();
+    cli.adjust( border, border, -border, -border );
+    QWidget * sub_group = new QWidget( group );
+    sub_group->setGeometry( cli );
     sub_group->show();
-
-    group->add( sub_group );
-
     return sub_group;
 }
 
-//==== Add A Sub Scroll To Tab ====//
-Fl_Scroll* TabScreen::AddSubScroll( Fl_Group* group, int border, int lessh )
+/// Add A Sub Scroll To a Tab
+QScrollArea* TabScreen::AddSubScroll( QWidget* group, int border, int lessh )
 {
-    if ( !group )
-    {
-        return NULL;
-    }
+    Q_D( TabScreen );
+    if ( !group ) return NULL;
 
-    int rx, ry, rw, rh;
-    m_MenuTabs->client_area( rx, ry, rw, rh, TAB_H );
-
-    int x = rx + border;
-    int y = ry + border;
-    int w = rw - 2 * border;
-    int h = rh - 2 * border - lessh;
-
-    Fl_Scroll* sub_group = new Fl_Scroll( x, y, w, h );
+    QRect cli = group->rect();
+    cli.adjust( border, border, -border, -border );
+    QScrollArea * sub_group = new QScrollArea( group );
+    sub_group->setGeometry( cli );
     sub_group->show();
-
-    group->add( sub_group );
-
     return sub_group;
 }
+
+TabScreen::~TabScreen() {}
 
 //=====================================================================//
 //=====================================================================//
@@ -1223,3 +1211,6 @@ bool XSecViewScreen::Update()
 
     return true;
 }
+
+#include "ScreenBase.moc"
+
