@@ -66,6 +66,7 @@ bool VspScreenQt::Update()
 
 void VspScreenQt::GuiDeviceCallBack( GuiDevice* device )
 {
+    d_func()->GuiDeviceCallBack( device );
 }
 
 int VspScreenQt::x()
@@ -106,8 +107,18 @@ VspScreenQtPrivate::VspScreenQtPrivate( VspScreenQt * q ) :
 {
 }
 
+void VspScreenQtPrivate::GuiDeviceCallBack( GuiDevice * )
+{
+}
+
 Vehicle* VspScreenQtPrivate::veh() {
     return GetScreenMgr()->GetVehiclePtr();
+}
+
+Geom* VspScreenQtPrivate::geom() {
+    Geom* geom_ptr = GetScreenMgr()->GetCurrGeom();
+    if ( !geom_ptr ) q_func()->Hide();
+    return geom_ptr;
 }
 
 ScreenMgr* VspScreenQtPrivate::GetScreenMgr() {
@@ -124,22 +135,35 @@ void VspScreenQtPrivate::ConnectUpdateFlag()
     const QMetaObject * const mo = widget()->metaObject();
     QMetaMethod flagMethod = mo->method( mo->indexOfSlot("SetUpdateFlag()") );
     foreach ( QWidget * w, widget()->findChildren<QWidget*>() ) {
-        // Skip internal Qt subcontrols.
-        if ( w->objectName().startsWith( "qt_" ) )
+        if ( w->objectName().startsWith( "qt_" ) ) // Skip internal Qt subcontrols.
             continue;
-        // Non-checkable buttons interest us only when they get clicked.
-        QAbstractButton * button = qobject_cast<QAbstractButton*>( w );
-        if ( button && !button->isCheckable() ) {
-            widget()->connect( button, SIGNAL( clicked() ), SLOT( SetUpdateFlag() ) );
-            continue;
-        }
-        // Update when the user property notifies of a change.
-        const QMetaObject * const mo = w->metaObject();
-        QMetaProperty mp = mo->userProperty();
-        if ( mp.isValid() && mp.hasNotifySignal() )
-            QObject::connect( w, mp.notifySignal(), widget(), flagMethod );
+        ConnectUpdateFlag( w, flagMethod );
     }
     EnableUpdateFlags();
+}
+
+/// Connect the SetUpdateFlag to one widget's user property change notification.
+void VspScreenQtPrivate::ConnectUpdateFlag( QWidget * w )
+{
+    const QMetaObject * const mo = widget()->metaObject();
+    QMetaMethod flagMethod = mo->method( mo->indexOfSlot("SetUpdateFlag()") );
+    ConnectUpdateFlag( w, flagMethod );
+}
+
+/// Connect the SetUpdateFlag to one widget's user property change notification.
+void VspScreenQtPrivate::ConnectUpdateFlag( QWidget * w, QMetaMethod & flagMethod )
+{
+    // Non-checkable buttons interest us only when they get clicked.
+    QAbstractButton * button = qobject_cast<QAbstractButton*>( w );
+    if ( button && !button->isCheckable() ) {
+        widget()->connect( button, SIGNAL( clicked() ), SLOT( SetUpdateFlag() ) );
+        return;
+    }
+    // Update when the user property notifies of a change.
+    const QMetaObject * const mo = w->metaObject();
+    QMetaProperty mp = mo->userProperty();
+    if ( mp.isValid() && mp.hasNotifySignal() )
+        QObject::connect( w, mp.notifySignal(), widget(), flagMethod );
 }
 
 /// Sets the global update flag on the screen manager. Does nothing by default
