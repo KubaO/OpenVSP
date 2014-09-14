@@ -16,6 +16,7 @@
 class UiGroupPrivate;
 class UiBuilderPrivate;
 class QListWidget;
+class QTableWidget;
 class QStackedLayout;
 
 /// A group of widgets that can be shown/hidden together.
@@ -29,6 +30,7 @@ public:
     UiGroup & operator=( const UiGroup & );
     void Show();
     void Hide();
+    ~UiGroup();
 protected:
     UiGroup( const QList<QWidget*> & );
     UiGroup( QStackedLayout *, int );
@@ -91,6 +93,7 @@ public:
     void AddGeomPicker( GeomPicker & geom_picker );
 
     void AddBrowser( QListWidget * browser );
+    void AddBrowser( QTableWidget * browser );
 
 #if 0
     //==== Add Another GroupLayout as a SubSet of This GroupLayout ====//

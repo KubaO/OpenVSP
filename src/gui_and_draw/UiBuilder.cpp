@@ -7,6 +7,12 @@
 
 #include "UIBuilder.h"
 
-UiBuilder::UiBuilder()
+class UiBuilderPrivate {
+
+};
+
+UiBuilder::UiBuilder( QWidget * ) : d_ptr( new UiBuilderPrivate )
 {
 }
+
+UiBuilder::~UiBuilder() {}

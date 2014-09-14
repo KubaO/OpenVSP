@@ -2,8 +2,6 @@
 // This file is released under the terms of the NASA Open Source Agreement (NOSA)
 // version 1.3 as detailed in the LICENSE file which accompanies this software.
 //
-
-// VehicleMgr.cpp: implementation of the Vehicle Class and Vehicle Mgr Singleton.
 //
 //////////////////////////////////////////////////////////////////////
 
@@ -26,6 +24,7 @@
 #include <QLabel>
 #include <QTabWidget>
 #include <QListWidget>
+#include <QTableWidget>
 #include <QScrollArea>
 #include <QGridLayout>
 
@@ -198,6 +197,7 @@ class GeomScreenPrivate : public TabScreenPrivate
 {
     Q_OBJECT
     Q_DECLARE_PUBLIC( GeomScreen )
+public:
 
     //==== Gen Tab ====//
     //==== Names, Color, Material ====//
@@ -266,7 +266,7 @@ class GeomScreenPrivate : public TabScreenPrivate
     //====== SubSurface Tab =====//
     int m_SubSurfTab_ind;
     UiGroup * m_CurSubDispGroup;
-    QListWidget* m_SubSurfBrowser;
+    QTableWidget* m_SubSurfBrowser;
     TriggerButton m_DelSubSurfButton;
     TriggerButton m_AddSubSurfButton;
     Choice m_SubSurfChoice;
@@ -310,8 +310,24 @@ class GeomScreenPrivate : public TabScreenPrivate
 
     GeomScreenPrivate( GeomScreen * q, int w, int h, const string & title );
     bool Update() Q_DECL_OVERRIDE;
+    void GuiDeviceCallBack( GuiDevice* device ) Q_DECL_OVERRIDE;
     void SubSurfDispGroup( UiGroup * group );
     void UpdateMaterialNames();
+
+    Q_SLOT void on_SubSurfBrowser_currentCellChanged( int row )
+    {
+        SubSurfaceMgr.SetCurrSubSurfInd( row );
+        SubSurface* sub_surf = geom()->GetSubSurf( SubSurfaceMgr.GetCurrSurfInd() );
+        if ( sub_surf )
+        {
+            m_SubSurfChoice.SetVal( sub_surf->GetType() );
+        }
+    }
+    Q_SLOT void on_SetBrowser_currentIndexChanged( int row )
+    {
+        bool flag = m_SetBrowser->currentItem()->checkState() == Qt::Checked;
+        geom()->SetSetFlag( row, flag );
+    }
 };
 VSP_DEFINE_PRIVATE( GeomScreen )
 
@@ -322,6 +338,10 @@ GeomScreenPrivate::GeomScreenPrivate( GeomScreen * q, int w, int h, const string
     QWidget* xform_tab = q->AddTab( "XForm" );
     QWidget* subsurf_tab = q->AddTab( "Sub" );
     m_SubSurfTab_ind = tabs.count() - 1;
+    m_SubSurfBrowser->setObjectName( "SubSurfBrowser" );
+    m_SetBrowser->setObjectName( "SetBrowser" );
+    ConnectUpdateFlag( m_SubSurfBrowser );
+    ConnectUpdateFlag( m_SetBrowser );
 
     //==== Gen Group Layout ====//
     UiBuilder gen( gen_tab );
@@ -481,7 +501,7 @@ GeomScreenPrivate::GeomScreenPrivate( GeomScreen * q, int w, int h, const string
     //=============== SubSurface Tab ===================//
     UiBuilder subsurf( subsurf_tab );
     subsurf.AddDividerBox( "Sub-Surface List" );
-    m_SubSurfBrowser = new QListWidget();
+    m_SubSurfBrowser = new QTableWidget();
     subsurf.AddBrowser( m_SubSurfBrowser );
     subsurf.AddYGap();
 
@@ -572,6 +592,10 @@ GeomScreenPrivate::GeomScreenPrivate( GeomScreen * q, int w, int h, const string
     subsurf.AddSlider( m_SSEllWLenSlider, "W Length", 1, "%5.4f" );
     subsurf.AddSlider( m_SSEllThetaSlider, "Theta", 25, "%5.4f" );
     m_SSEllGroup = subsurf.EndStackPage();
+
+    EnableUpdateFlags();
+    BlockSignalsInUpdates();
+    QMetaObject::connectSlotsByName( this );
 }
 
 GeomScreen::GeomScreen( ScreenMgr* mgr, int w, int h, const string & title ) :
@@ -584,17 +608,21 @@ GeomScreen::GeomScreen( ScreenMgr* mgr, int w, int h, const string & title ) :
 #endif
 }
 
+GeomScreen::GeomScreen( GeomScreenPrivate & dd, ScreenMgr* mgr ) :
+    TabScreen( dd, mgr )
+{
+#if 0
+    // Set the window as a geom screen window
+    VSP_Window* vsp_win = dynamic_cast<VSP_Window*>(m_FLTK_Window);
+    vsp_win->SetGeomScreenFlag( true );
+#endif
+}
+
 bool GeomScreenPrivate::Update()
 {
     Q_Q( GeomScreen );
-    Geom* geom_ptr = GetScreenMgr()->GetCurrGeom();
-    if ( !geom_ptr )
-    {
-        q->Hide();
-        return false;
-    }
-
-    char str[256];
+    Geom * geom_ptr = geom();
+    if ( !geom_ptr ) return false;
 
     TabScreenPrivate::Update();
 
@@ -748,31 +776,29 @@ bool GeomScreenPrivate::Update()
     }
 
     //==== SubSurfBrowser ====//
+    auto headers = QStringList() << "NAME" << "TYPE";
     m_SubSurfBrowser->clear();
-    static int widths[] = { 75, 75 };
-    m_SubSurfBrowser->column_widths( widths );
-    m_SubSurfBrowser->column_char( ':' );
-
-    sprintf( str, "@b@.NAME:@b@.TYPE" );
-    m_SubSurfBrowser->add( str );
+    m_SubSurfBrowser->setColumnCount( 2 );
+    m_SubSurfBrowser->setHorizontalHeaderLabels( headers );
 
     string ss_name, ss_type;
 
     vector<SubSurface*> subsurf_vec = geom_ptr->GetSubSurfVec();
+    m_SubSurfBrowser->setRowCount( subsurf_vec.size() );
     for ( int i = 0; i < ( int )subsurf_vec.size() ; i++ )
     {
-
         ss_name = subsurf_vec[i]->GetName();
         ss_type = SubSurface::GetTypeName( subsurf_vec[i]->GetType() );
-        sprintf( str, "%s:%s", ss_name.c_str(), ss_type.c_str() );
-        m_SubSurfBrowser->add( str );
+        auto name_item = new QTableWidgetItem( ss_name.c_str() );
+        auto type_item = new QTableWidgetItem( ss_type.c_str() );
+        m_SubSurfBrowser->setItem( i, 0, name_item );
+        m_SubSurfBrowser->setItem( i, 1, type_item );
     }
 
     if ( geom_ptr->ValidSubSurfInd( SubSurfaceMgr.GetCurrSurfInd() ) )
     {
-        m_SubSurfBrowser->select( SubSurfaceMgr.GetCurrSurfInd() + 2 );
+        m_SubSurfBrowser->selectRow( SubSurfaceMgr.GetCurrSurfInd() );
     }
-
 
     return true;
 }
@@ -790,16 +816,10 @@ void GeomScreenPrivate::UpdateMaterialNames()
     }
 }
 
-void GeomScreen::GuiDeviceCallBack( GuiDevice* device )
+void GeomScreenPrivate::GuiDeviceCallBack( GuiDevice* device )
 {
-    assert( m_ScreenMgr );
-    Geom* geom_ptr = m_ScreenMgr->GetCurrGeom();
-    if ( !geom_ptr )
-    {
-        Hide();
-        return;
-    }
-
+    Geom* geom_ptr = geom();
+    if ( !geom_ptr ) return;
     if ( device == &m_ColorPicker )
     {
         vec3d c = m_ColorPicker.GetColor();
@@ -822,9 +842,9 @@ void GeomScreen::GuiDeviceCallBack( GuiDevice* device )
     }
     else if ( device == &m_CustomMaterialButton )
     {
-        ( ( MaterialEditScreen* ) ( m_ScreenMgr->GetScreen( ScreenMgr::VSP_MATERIAL_EDIT_SCREEN ) ) )->m_OrigColor = geom_ptr->GetMaterial()->m_Name;
+        static_cast< MaterialEditScreen*> ( GetScreenMgr()->GetScreen( ScreenMgr::VSP_MATERIAL_EDIT_SCREEN ) )->m_OrigColor = geom_ptr->GetMaterial()->m_Name;
         geom_ptr->GetMaterial()->m_Name = "Custom";
-        m_ScreenMgr->ShowScreen( ScreenMgr::VSP_MATERIAL_EDIT_SCREEN );
+        GetScreenMgr()->ShowScreen( ScreenMgr::VSP_MATERIAL_EDIT_SCREEN );
     }
     else if ( device == &m_ScaleAcceptButton )
     {
@@ -874,7 +894,7 @@ void GeomScreen::GuiDeviceCallBack( GuiDevice* device )
         }
     }
 
-    m_ScreenMgr->SetUpdateFlag( true );
+    SetUpdateFlag();
 }
 
 void GeomScreenPrivate::SubSurfDispGroup( UiGroup* group )
@@ -897,138 +917,118 @@ void GeomScreenPrivate::SubSurfDispGroup( UiGroup* group )
     }
 }
 
-void GeomScreen::CallBack( Fl_Widget *w )
+//=====================================================================//
+//=====================================================================//
+//=====================================================================//
+
+class SkinScreenPrivate : public GeomScreenPrivate
 {
-    assert( m_ScreenMgr );
-    Geom* geom_ptr = m_ScreenMgr->GetCurrGeom();
-    if ( !geom_ptr )
-    {
-        Hide();
-        return;
-    }
+    Q_OBJECT
+    Q_DECLARE_PUBLIC( SkinScreen )
+public:
 
-    if ( w == m_SubSurfBrowser )
-    {
-        SubSurfaceMgr.SetCurrSubSurfInd( m_SubSurfBrowser->value() - 2 );
-        SubSurface* sub_surf = geom_ptr->GetSubSurf( SubSurfaceMgr.GetCurrSurfInd() );
-        if ( sub_surf )
-        {
-            m_SubSurfChoice.SetVal( sub_surf->GetType() );
-        }
-    }
-    else if ( w == m_SetBrowser )
-    {
-        int curr_index = m_SetBrowser->value();
-        bool flag = !!m_SetBrowser->checked( curr_index );
+    IndexSelector m_SkinIndexSelector;
 
-        geom_ptr->SetSetFlag( curr_index, flag );
-    }
+    ToggleButton m_AllSymButton;
+    SkinHeader m_TopHeader;
+    SkinControl m_TopAngleSkinControl;
+    SkinControl m_TopStrengthSkinControl;
+    SkinControl m_TopCurvatureSkinControl;
 
-    m_ScreenMgr->SetUpdateFlag( true );
+    SkinHeader m_RightHeader;
+    SkinControl m_RightAngleSkinControl;
+    SkinControl m_RightStrengthSkinControl;
+    SkinControl m_RightCurvatureSkinControl;
+
+    ToggleButton m_TBSymButton;
+    SkinHeader m_BottomHeader;
+    SkinControl m_BottomAngleSkinControl;
+    SkinControl m_BottomStrengthSkinControl;
+    SkinControl m_BottomCurvatureSkinControl;
+
+    ToggleButton m_RLSymButton;
+    SkinHeader m_LeftHeader;
+    SkinControl m_LeftAngleSkinControl;
+    SkinControl m_LeftStrengthSkinControl;
+    SkinControl m_LeftCurvatureSkinControl;
+
+    SkinScreenPrivate( SkinScreen *, int w, int h, const string & title );
+    bool Update() Q_DECL_OVERRIDE;
+    void GuiDeviceCallBack( GuiDevice * ) Q_DECL_OVERRIDE;
+};
+VSP_DEFINE_PRIVATE( SkinScreen )
+
+SkinScreenPrivate::SkinScreenPrivate( SkinScreen * q, int w, int h, const string &title ) :
+    GeomScreenPrivate( q, w, h, title )
+{
+    QWidget* skin_tab = q->AddTab( "Skinning" );
+    UiBuilder skin( skin_tab );
+
+    skin.AddDividerBox( "Skin Cross Section" );
+    skin.AddIndexSelector( m_SkinIndexSelector );
+    skin.AddYGap();
+    skin.AddYGap();
+
+    skin.StartLine();
+    skin.SetNextExpanding();
+    skin.AddDividerBox( "Top Side" );
+    skin.AddButton( m_AllSymButton, "All Sym" );
+    skin.EndLine();
+    skin.AddSkinHeader( m_TopHeader );
+    skin.AddSkinControl( m_TopAngleSkinControl, "Angle", 30, "%6.5f");
+    skin.AddSkinControl( m_TopStrengthSkinControl, "Strength", 30, "%6.5f");
+    skin.AddSkinControl( m_TopCurvatureSkinControl, "Curvature", 30, "%6.5f");
+    skin.AddYGap();
+
+    skin.AddDividerBox( "Right Side" );
+    skin.AddSkinHeader( m_RightHeader );
+    skin.AddSkinControl( m_RightAngleSkinControl, "Angle", 30, "%6.5f");
+    skin.AddSkinControl( m_RightStrengthSkinControl, "Strength", 30, "%6.5f");
+    skin.AddSkinControl( m_RightCurvatureSkinControl, "Curvature", 30, "%6.5f");
+    skin.AddYGap();
+
+    skin.StartLine();
+    skin.SetNextExpanding();
+    skin.AddDividerBox( "Bottom Side" );
+    skin.AddButton( m_TBSymButton, "T/B Sym" );
+    skin.EndLine();
+    skin.AddSkinHeader( m_BottomHeader );
+    skin.AddSkinControl( m_BottomAngleSkinControl, "Angle", 30, "%6.5f");
+    skin.AddSkinControl( m_BottomStrengthSkinControl, "Strength", 30, "%6.5f");
+    skin.AddSkinControl( m_BottomCurvatureSkinControl, "Curvature", 30, "%6.5f");
+    skin.AddYGap();
+
+    skin.StartLine();
+    skin.SetNextExpanding();
+    skin.AddDividerBox( "Left Side" );
+    skin.AddButton( m_RLSymButton, "R/L Sym" );
+    skin.EndLine();
+
+    skin.AddSkinHeader( m_LeftHeader );
+    skin.AddSkinControl( m_LeftAngleSkinControl, "Angle", 30, "%6.5f");
+    skin.AddSkinControl( m_LeftStrengthSkinControl, "Strength", 30, "%6.5f");
+    skin.AddSkinControl( m_LeftCurvatureSkinControl, "Curvature", 30, "%6.5f");
 }
 
-//=====================================================================//
-//=====================================================================//
-//=====================================================================//
 SkinScreen::SkinScreen( ScreenMgr* mgr, int w, int h, const string & title ) :
-    GeomScreen( mgr, w, h, title )
+    GeomScreen( *new SkinScreenPrivate( this, w, h, title ), mgr )
 {
-
-    Fl_Group* skin_tab = AddTab( "Skinning" );
-    Fl_Group* skin_group = AddSubGroup( skin_tab, 5 );
-
-    m_SkinLayout.SetGroupAndScreen( skin_group, this );
-
-    m_SkinLayout.AddDividerBox( "Skin Cross Section" );
-
-    m_SkinLayout.AddIndexSelector( m_SkinIndexSelector );
-
-
-    m_SkinLayout.AddYGap();
-
-    m_SkinLayout.SetButtonWidth( 75 );
-
-    int oldDH = m_SkinLayout.GetDividerHeight();
-    m_SkinLayout.SetDividerHeight( m_SkinLayout.GetStdHeight() );
-
-    m_SkinLayout.AddYGap();
-
-    m_SkinLayout.SetSameLineFlag( true );
-    m_SkinLayout.AddDividerBox( "Top Side", m_SkinLayout.GetButtonWidth() );
-    m_SkinLayout.SetFitWidthFlag( false );
-    m_SkinLayout.AddButton( m_AllSymButton, "All Sym" );
-    m_SkinLayout.ForceNewLine();
-    m_SkinLayout.SetFitWidthFlag( true );
-    m_SkinLayout.SetSameLineFlag( false );
-
-    m_SkinLayout.SetChoiceButtonWidth( 55 );
-    m_SkinLayout.SetSliderWidth( 50 );
-    m_SkinLayout.AddSkinHeader( m_TopHeader );
-
-    m_SkinLayout.AddSkinControl( m_TopAngleSkinControl, "Angle", 30, "%6.5f");
-    m_SkinLayout.AddSkinControl( m_TopStrengthSkinControl, "Strength", 30, "%6.5f");
-    m_SkinLayout.AddSkinControl( m_TopCurvatureSkinControl, "Curvature", 30, "%6.5f");
-
-    m_SkinLayout.AddYGap();
-    m_SkinLayout.AddDividerBox( "Right Side" );
-
-    m_SkinLayout.AddSkinHeader( m_RightHeader );
-    m_SkinLayout.AddSkinControl( m_RightAngleSkinControl, "Angle", 30, "%6.5f");
-    m_SkinLayout.AddSkinControl( m_RightStrengthSkinControl, "Strength", 30, "%6.5f");
-    m_SkinLayout.AddSkinControl( m_RightCurvatureSkinControl, "Curvature", 30, "%6.5f");
-
-    m_SkinLayout.AddYGap();
-    m_SkinLayout.SetSameLineFlag( true );
-    m_SkinLayout.AddDividerBox( "Bottom Side", m_SkinLayout.GetButtonWidth() );
-    m_SkinLayout.SetFitWidthFlag( false );
-    m_SkinLayout.AddButton( m_TBSymButton, "T/B Sym" );
-    m_SkinLayout.ForceNewLine();
-    m_SkinLayout.SetFitWidthFlag( true );
-    m_SkinLayout.SetSameLineFlag( false );
-
-    m_SkinLayout.AddSkinHeader( m_BottomHeader );
-    m_SkinLayout.AddSkinControl( m_BottomAngleSkinControl, "Angle", 30, "%6.5f");
-    m_SkinLayout.AddSkinControl( m_BottomStrengthSkinControl, "Strength", 30, "%6.5f");
-    m_SkinLayout.AddSkinControl( m_BottomCurvatureSkinControl, "Curvature", 30, "%6.5f");
-
-    m_SkinLayout.AddYGap();
-    m_SkinLayout.SetSameLineFlag( true );
-    m_SkinLayout.AddDividerBox( "Left Side", m_SkinLayout.GetButtonWidth() );
-    m_SkinLayout.SetFitWidthFlag( false );
-    m_SkinLayout.AddButton( m_RLSymButton, "R/L Sym" );
-    m_SkinLayout.ForceNewLine();
-    m_SkinLayout.SetFitWidthFlag( true );
-    m_SkinLayout.SetSameLineFlag( false );
-
-    m_SkinLayout.AddSkinHeader( m_LeftHeader );
-    m_SkinLayout.AddSkinControl( m_LeftAngleSkinControl, "Angle", 30, "%6.5f");
-    m_SkinLayout.AddSkinControl( m_LeftStrengthSkinControl, "Strength", 30, "%6.5f");
-    m_SkinLayout.AddSkinControl( m_LeftCurvatureSkinControl, "Curvature", 30, "%6.5f");
-
-
-
-
-    m_SkinLayout.SetDividerHeight( oldDH );
 }
 
-
-//==== Update Pod Screen ====//
-bool SkinScreen::Update()
+SkinScreen::SkinScreen( SkinScreenPrivate & dd, ScreenMgr* mgr ) :
+    GeomScreen( dd, mgr )
 {
-    assert( m_ScreenMgr );
+}
 
-    Geom* geom_ptr = m_ScreenMgr->GetCurrGeom();
-    if ( !geom_ptr )
-    {
-        Hide();
-        return false;
-    }
+bool SkinScreenPrivate::Update()
+{
+    Geom* geom_ptr = geom();
+    if ( !geom_ptr ) return false;
 
-    GeomScreen::Update();
+    GeomScreenPrivate::Update();
 
     GeomXSec* geomxsec_ptr = dynamic_cast< GeomXSec* >( geom_ptr );
     assert( geomxsec_ptr );
-
 
     //==== Skin & XSec Index Display ===//
     int xsid = geomxsec_ptr->GetActiveXSecIndex();
@@ -1199,10 +1199,10 @@ bool SkinScreen::Update()
     return true;
 }
 
-void SkinScreen::GuiDeviceCallBack( GuiDevice* gui_device )
+void SkinScreenPrivate::GuiDeviceCallBack( GuiDevice* gui_device )
 {
     //==== Find Fuselage Ptr ====//
-    Geom* geom_ptr = m_ScreenMgr->GetCurrGeom();
+    Geom* geom_ptr = geom();
     if ( !geom_ptr )
     {
         return;
@@ -1228,30 +1228,19 @@ void SkinScreen::GuiDeviceCallBack( GuiDevice* gui_device )
         }
     }
 
-    GeomScreen::GuiDeviceCallBack( gui_device );
+    GeomScreenPrivate::GuiDeviceCallBack( gui_device );
 }
 
-
-//==== Fltk  Callbacks ====//
-void SkinScreen::CallBack( Fl_Widget *w )
-{
-    GeomScreen::CallBack( w );
-}
-
-
 //=====================================================================//
 //=====================================================================//
 //=====================================================================//
 
-
-
-XSecViewScreen::XSecViewScreen( ScreenMgr* mgr ) : BasicScreen( mgr, 300, 300, "XSec View" )
+XSecViewScreen::XSecViewScreen( ScreenMgr* mgr ) : VspScreenFLTK( mgr )//BasicScreen( mgr, 300, 300, "XSec View" )
 {
     int x = m_FLTK_Window->x();
     int y = m_FLTK_Window->y();
     int w = m_FLTK_Window->w();
     int h = m_FLTK_Window->h();
-
 
     m_FLTK_Window->begin();
     m_GlWin = new VSPGUI::VspSubGlWindow( x, y, w, h, DrawObj::VSP_XSEC_SCREEN);
@@ -1273,4 +1262,3 @@ bool XSecViewScreen::Update()
 }
 
 #include "ScreenBase.moc"
-
