@@ -1,71 +1,22 @@
+//
+// This file is released under the terms of the NASA Open Source Agreement (NOSA)
+// version 1.3 as detailed in the LICENSE file which accompanies this software.
+//
+//
+//////////////////////////////////////////////////////////////////////
+
 #ifndef _VSP_GUI_TEXTURE_MANAGER_SCREEN_H
 #define _VSP_GUI_TEXTURE_MANAGER_SCREEN_H
 
-#include "ScreenBase.h"
-#include "GuiDevice.h"
+#include "VspScreenQt.h"
 
-namespace VSPGUI
+class ManageTextureScreenPrivate;
+class ManageTextureScreen : public VspScreenQt
 {
-class VspSubGlWindow;
-}
-
-class TextureMgrUI;
-class Texture;
-
-class ManageTextureScreen : public VspScreenFLTK
-{
+    VSP_DECLARE_PRIVATE( ManageTextureScreen )
 public:
     ManageTextureScreen( ScreenMgr * mgr );
-    virtual ~ManageTextureScreen();
-
-public:
-    virtual void Show();
-    virtual void Hide();
-    virtual bool Update();
-
-    void CallBack( Fl_Widget * w );
-    static void staticCB( Fl_Widget * w, void * data )
-    {
-        static_cast<ManageTextureScreen *>( data )->CallBack( w );
-    }
-
-protected:
-    TextureMgrUI * m_TextureMgrUI;
-
-    SliderInput m_UPosSlider;
-    SliderInput m_WPosSlider;
-
-    SliderInput m_UScaleSlider;
-    SliderInput m_WScaleSlider;
-
-    SliderInput m_TransparencySlider;
-
-    ToggleButton m_FlipUButton;
-    ToggleButton m_FlipWButton;
-
-private:
-    void UpdateCurrentSelected();
-    void ResetCurrentSelected();
-
-private:
-    struct CompDropDownItem
-    {
-        std::string GeomName;
-        std::string GeomID;
-        int GUIIndex;
-    };
-
-    struct TexDropDownItem
-    {
-        Texture * TexInfo;
-        int GUIIndex;
-    };
-
-    TexDropDownItem * m_SelectedTexItem;
-
-    VSPGUI::VspSubGlWindow * m_GlWin;
-
-    std::vector<CompDropDownItem> m_CompDropDownList;
-    std::vector<TexDropDownItem> m_TexDropDownList;
+    ~ManageTextureScreen();
 };
-#endif
+
+#endif // _VSP_GUI_TEXTURE_MANAGER_SCREEN_H

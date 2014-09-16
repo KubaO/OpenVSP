@@ -12,7 +12,6 @@ feaStructFlScreen.fl
 mainScreen.fl
 parmFlScreen.fl
 structureBrowserScreen.fl
-textureMgrFlScreen.fl
 userParmFlScreen.fl
 )
 

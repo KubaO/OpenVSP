@@ -35,6 +35,7 @@ QT5_WRAP_UI(UI_HEADERS
 ../qt_screens/ImportScreen.ui
 ../qt_screens/LabelScreen.ui
 ../qt_screens/ManageGeomScreen.ui
+../qt_screens/ManageTextureScreen.ui
 ../qt_screens/ManageViewScreen.ui
 ../qt_screens/MassPropScreen.ui
 ../qt_screens/ParmLinkScreen.ui

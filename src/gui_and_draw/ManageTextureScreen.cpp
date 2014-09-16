@@ -1,94 +1,168 @@
-#include <assert.h>
-
-#include "ScreenMgr.h"
+//
+// This file is released under the terms of the NASA Open Source Agreement (NOSA)
+// version 1.3 as detailed in the LICENSE file which accompanies this software.
+//
+//
+//////////////////////////////////////////////////////////////////////
 
 #include "ManageTextureScreen.h"
-#include "textureMgrFlScreen.h"
 
+#include "ScreenMgr.h"
 #include "SubGLWindow.h"
 #include "GraphicEngine.h"
 #include "Display.h"
 #include "Viewport.h"
 #include "Background.h"
 #include "GraphicSingletons.h"
+#include "GuiDeviceQt.h"
 
 #include "Geom.h"
 #include "TextureMgr.h"
+#include "StlHelper.h"
+#include "ui_ManageTextureScreen.h"
+#include "VspScreenQt_p.h"
+#include <cassert>
 
-#include "FL/Fl_File_Chooser.H"
+namespace {
 
-ManageTextureScreen::ManageTextureScreen( ScreenMgr * mgr ) : VspScreenFLTK( mgr )
+struct CompDropDownItem
 {
-    m_TextureMgrUI = new TextureMgrUI();
-    m_FLTK_Window = m_TextureMgrUI->UIWindow;
+    std::string GeomName;
+    std::string GeomID;
+    int GUIIndex;
+};
 
-    m_TextureMgrUI->UIWindow->position( 775, 50 );
+struct TexDropDownItem
+{
+    Texture * TexInfo;
+    int GUIIndex;
+};
 
-    m_UPosSlider.Init( this, m_TextureMgrUI->uPosSlider, m_TextureMgrUI->uPosInput, 1, "%6.5f", m_TextureMgrUI->uPosButton );
-    m_WPosSlider.Init( this, m_TextureMgrUI->wPosSlider, m_TextureMgrUI->wPosInput, 1, "%6.5f", m_TextureMgrUI->wPosButton );
+}
 
-    m_UScaleSlider.Init( this, m_TextureMgrUI->uScaleSlider, m_TextureMgrUI->uScaleInput, 1, "%6.5f", m_TextureMgrUI->uScaleButton );
-    m_WScaleSlider.Init( this, m_TextureMgrUI->wScaleSlider, m_TextureMgrUI->wScaleInput, 1, "%6.5f", m_TextureMgrUI->wScaleButton );
+class ManageTextureScreenPrivate : public QDialog, public VspScreenQtPrivate
+{
+    Q_OBJECT
+    Q_DECLARE_PUBLIC( ManageTextureScreen )
+    Q_PRIVATE_SLOT( self(), void SetUpdateFlag() )
 
-    m_TransparencySlider.Init( this, m_TextureMgrUI->alphaSlider, m_TextureMgrUI->alphaInput, 1, "%6.5f", m_TextureMgrUI->alphaButton );
+    Ui::ManageTextureScreen Ui;
 
-    m_FlipUButton.Init( this, m_TextureMgrUI->flipUButton );
-    m_FlipWButton.Init( this, m_TextureMgrUI->flipWButton );
+    SliderInputQt m_UPosSlider;
+    SliderInputQt m_WPosSlider;
 
-    m_TextureMgrUI->compChoice->callback( staticCB, this );
-    m_TextureMgrUI->textureChoice->callback( staticCB, this );
+    SliderInputQt m_UScaleSlider;
+    SliderInputQt m_WScaleSlider;
 
-    m_TextureMgrUI->textureNameInput->callback( staticCB, this );
+    SliderInputQt m_TransparencySlider;
 
-    m_TextureMgrUI->addTextureButton->callback( staticCB, this );
-    m_TextureMgrUI->delTextureButton->callback( staticCB, this );
+    ToggleButtonQt m_FlipUButton;
+    ToggleButtonQt m_FlipWButton;
 
-    // Add GL 2D Window.
-    Fl_Widget * w = m_TextureMgrUI->texGLGroup;
-    m_TextureMgrUI->texGLGroup->begin();
-    m_GlWin = new VSPGUI::VspSubGlWindow( w->x(), w->y(), w->w(), w->h(), DrawObj::VSP_TEX_PREVIEW );
-    m_TextureMgrUI->texGLGroup->end();
+    TexDropDownItem * m_SelectedTexItem;
+    VSPGUI::VspSubGlWindow m_GlWin;
+
+    std::vector<CompDropDownItem> m_CompDropDownList;
+    std::vector<TexDropDownItem> m_TexDropDownList;
+
+    ManageTextureScreenPrivate( ManageTextureScreen * );
+    QWidget * widget() Q_DECL_OVERRIDE { return this; }
+    bool Update() Q_DECL_OVERRIDE;
+
+    void UpdateCurrentSelected();
+    void ResetCurrentSelected();
+
+    Q_SLOT void on_compChoice_currentIndexChanged( int selectedIndex )
+    {
+        const_foreach( auto item, m_CompDropDownList )
+        {
+            if( item.GUIIndex == selectedIndex )
+            {
+                veh()->SetActiveGeom( item.GeomID );
+                ResetCurrentSelected();
+                break;
+            }
+        }
+    }
+    Q_SLOT void on_textureChoice_currentIndexChanged( int )
+    {
+        UpdateCurrentSelected();
+    }
+    Q_SLOT void on_textureNameInput_textChanged( const QString & val )
+    {
+        vector< Geom* > select_vec = veh()->GetActiveGeomPtrVec();
+        Texture * info = select_vec[0]->m_GuiDraw.getTextureMgr()->FindTexture( m_SelectedTexItem->TexInfo->GetID() );
+        info->SetName( val.toStdString() );
+    }
+    Q_SLOT void on_addTextureButton_clicked()
+    {
+        vector< Geom* > select_vec = veh()->GetActiveGeomPtrVec();
+
+        std::string fp = GetScreenMgr()->GetSelectFileScreen()->FileOpen( "Read Texture?", "TGA, JPG Files (*.{tga,jpg})" );
+        if ( fp.empty() ) return;
+        select_vec[0]->m_GuiDraw.getTextureMgr()->AttachTexture( fp );
+
+        ResetCurrentSelected();
+    }
+    Q_SLOT void on_delTextureButton_clicked()
+    {
+        if( m_SelectedTexItem )
+        {
+            vector< Geom* > select_vec = veh()->GetActiveGeomPtrVec();
+            select_vec[0]->m_GuiDraw.getTextureMgr()->RemoveTexture( m_SelectedTexItem->TexInfo->GetID() );
+
+            ResetCurrentSelected();
+        }
+    }
+};
+VSP_DEFINE_PRIVATE( ManageTextureScreen )
+
+ManageTextureScreenPrivate::ManageTextureScreenPrivate( ManageTextureScreen * q ) :
+    VspScreenQtPrivate( q ),
+    m_GlWin( DrawObj::VSP_TEX_PREVIEW )
+{
+    Ui.setupUi( this );
+    move( 775, 50 );
+
+    m_UPosSlider.Init( q, Ui.uPosSlider, Ui.uPosInput, 1, 5, Ui.uPosButton );
+    m_WPosSlider.Init( q, Ui.wPosSlider, Ui.wPosInput, 1, 5, Ui.wPosButton );
+
+    m_UScaleSlider.Init( q, Ui.uScaleSlider, Ui.uScaleInput, 1, 5, Ui.uScaleButton );
+    m_WScaleSlider.Init( q, Ui.wScaleSlider, Ui.wScaleInput, 1, 5, Ui.wScaleButton );
+
+    m_TransparencySlider.Init( q, Ui.alphaSlider, Ui.alphaInput, 1, 5, Ui.alphaButton );
+
+    m_FlipUButton.Init( q, Ui.flipUButton );
+    m_FlipWButton.Init( q, Ui.flipWButton );
+
+    delete Ui.textureLayout->itemAtPosition( 0, 2 );
+    Ui.textureLayout->addWidget( &m_GlWin, 0, 2, 5, 1 );
 
     ResetCurrentSelected();
+    BlockSignalsInUpdates();
+    ConnectUpdateFlag();
 }
 
-ManageTextureScreen::~ManageTextureScreen()
+ManageTextureScreen::ManageTextureScreen( ScreenMgr * mgr ) :
+    VspScreenQt( * new ManageTextureScreenPrivate( this ), mgr )
 {
-    delete m_GlWin;
-    delete m_TextureMgrUI;
 }
 
-void ManageTextureScreen::Show()
+bool ManageTextureScreenPrivate::Update()
 {
-    if( Update() )
-    {
-        m_FLTK_Window->show();
-    }
-}
-
-void ManageTextureScreen::Hide()
-{
-    m_FLTK_Window->hide();
-}
-
-bool ManageTextureScreen::Update()
-{
-    assert( m_ScreenMgr );
-
-    Vehicle* veh = m_ScreenMgr->GetVehiclePtr();
-    vector< Geom* > select_vec = veh->GetActiveGeomPtrVec();
+    vector< Geom* > select_vec = veh()->GetActiveGeomPtrVec();
 
     if ( select_vec.size() != 1 )
     {
-        Hide();
+        q_func()->Hide();
         return false;
     }
 
     // Redo list on each update.
-    m_TextureMgrUI->compChoice->clear();
+    Ui.compChoice->clear();
     m_CompDropDownList.clear();
 
-    std::vector<Geom *> geomVec = veh->FindGeomVec( veh->GetGeomVec() );
+    std::vector<Geom *> geomVec = veh()->FindGeomVec( veh()->GetGeomVec() );
     for( int i = 0; i < ( int )geomVec.size(); i++ )
     {
         CompDropDownItem item;
@@ -96,16 +170,15 @@ bool ManageTextureScreen::Update()
         item.GeomID = geomVec[i]->GetID();
 
         // Hack to add duplicate names
-        char str[256];
-        sprintf( str, "%d", i );
-        item.GUIIndex = m_TextureMgrUI->compChoice->add( str );
+        Ui.compChoice->addItem( QString::number( i ) );
+        item.GUIIndex = Ui.compChoice->count() - 1;
 
         m_CompDropDownList.push_back( item );
     }
     // Fill Hacked char array with correct names.
-    for( int i = 0; i < ( int )m_CompDropDownList.size(); i++ )
+    const_foreach( auto item, m_CompDropDownList )
     {
-        m_TextureMgrUI->compChoice->replace( m_CompDropDownList[i].GUIIndex, m_CompDropDownList[i].GeomName.c_str() );
+        Ui.compChoice->setItemText( item.GUIIndex, item.GeomName.c_str() );
     }
 
     // Set compChoice to current selected and update texture dropdown list.
@@ -113,16 +186,16 @@ bool ManageTextureScreen::Update()
     {
         if( m_CompDropDownList[i].GeomID == select_vec[0]->GetID() )
         {
-            m_TextureMgrUI->compChoice->value( m_CompDropDownList[i].GUIIndex );
+            Ui.compChoice->setCurrentIndex( m_CompDropDownList[i].GUIIndex );
 
             // Update Texture Dropdown List. //
 
             // Redo texture list on each update.
-            m_TextureMgrUI->textureChoice->clear();
+            Ui.textureChoice->clear();
             m_TexDropDownList.clear();
 
             // Clear preview window.
-            VSPGraphic::Viewport * viewport = m_GlWin->getGraphicEngine()->getDisplay()->getViewport();
+            VSPGraphic::Viewport * viewport = m_GlWin.getGraphicEngine()->getDisplay()->getViewport();
             assert( viewport );
             viewport->getBackground()->removeImage();
 
@@ -135,27 +208,25 @@ bool ManageTextureScreen::Update()
                 item.TexInfo = texInfos[j];
 
                 // Hack to add duplicate names
-                char str[256];
-                sprintf( str, "%d", j );
-                item.GUIIndex = m_TextureMgrUI->textureChoice->add( str );
+                Ui.textureChoice->addItem( QString::number( j ) );
 
                 m_TexDropDownList.push_back( item );
             }
             // Fill Hacked char array with correct names.
-            for( int j = 0; j < ( int )m_TexDropDownList.size(); j++ )
+            const_foreach( auto item, m_TexDropDownList )
             {
-                m_TextureMgrUI->textureChoice->replace( m_TexDropDownList[j].GUIIndex, m_TexDropDownList[j].TexInfo->GetName().c_str() );
+                Ui.textureChoice->setItemText( item.GUIIndex, item.TexInfo->GetName().c_str() );
             }
             if( !m_TexDropDownList.empty() )
             {
                 if( m_SelectedTexItem )
                 {
-                    m_TextureMgrUI->textureChoice->value( m_SelectedTexItem->GUIIndex );
+                    Ui.textureChoice->setCurrentIndex( m_SelectedTexItem->GUIIndex );
                 }
                 else
                 {
                     // On refresh list, if nothing is selected, pick last item on list.
-                    m_TextureMgrUI->textureChoice->value( m_TexDropDownList[m_TexDropDownList.size() - 1].GUIIndex );
+                    Ui.textureChoice->setCurrentIndex( Ui.textureChoice->count() - 1 );
                 }
                 UpdateCurrentSelected();
 
@@ -167,9 +238,6 @@ bool ManageTextureScreen::Update()
             else
             {
                 ResetCurrentSelected();
-
-                // Force redraw empty list.
-                m_TextureMgrUI->textureChoice->redraw();
             }
 
             // Update Sliders and Buttons.
@@ -177,7 +245,7 @@ bool ManageTextureScreen::Update()
             {
                 Texture * info = select_vec[0]->m_GuiDraw.getTextureMgr()->FindTexture( m_SelectedTexItem->TexInfo->GetID() );
 
-                m_TextureMgrUI->textureNameInput->value( info->GetName().c_str() );
+                Ui.textureNameInput->setText( info->GetName().c_str() );
 
                 m_UScaleSlider.Update( info->m_UScale.GetID() );
                 m_WScaleSlider.Update( info->m_WScale.GetID() );
@@ -193,77 +261,17 @@ bool ManageTextureScreen::Update()
             break;
         }
     }
-    m_GlWin->redraw();
+    m_GlWin.update();
     return true;
 }
 
-void ManageTextureScreen::CallBack( Fl_Widget * w )
-{
-    Vehicle* veh = m_ScreenMgr->GetVehiclePtr();
-
-    if( w == m_TextureMgrUI->compChoice )
-    {
-        int selectedIndex = m_TextureMgrUI->compChoice->value();
-        for( int i = 0; i < ( int )m_CompDropDownList.size(); i++ )
-        {
-            if( m_CompDropDownList[i].GUIIndex == selectedIndex )
-            {
-                veh->SetActiveGeom( m_CompDropDownList[i].GeomID );
-                ResetCurrentSelected();
-                break;
-            }
-        }
-    }
-    else if( w == m_TextureMgrUI->textureChoice )
-    {
-        UpdateCurrentSelected();
-    }
-    else if( w == m_TextureMgrUI->textureNameInput )
-    {
-        vector< Geom* > select_vec = veh->GetActiveGeomPtrVec();
-        Texture * info = select_vec[0]->m_GuiDraw.getTextureMgr()->FindTexture( m_SelectedTexItem->TexInfo->GetID() );
-        info->SetName( m_TextureMgrUI->textureNameInput->value() );
-    }
-    else if( w == m_TextureMgrUI->addTextureButton )
-    {
-        vector< Geom* > select_vec = veh->GetActiveGeomPtrVec();
-
-        Fl_File_Chooser fc( ".", "TGA, JPG Files (*.{tga,jpg})", Fl_File_Chooser::SINGLE, "Read Texture?" );
-        fc.show();
-
-        while( fc.shown() )
-        {
-            Fl::wait();
-        }
-
-        if( fc.value() == NULL )
-        {
-            return;
-        }
-        select_vec[0]->m_GuiDraw.getTextureMgr()->AttachTexture( fc.value() );
-
-        ResetCurrentSelected();
-    }
-    else if( w == m_TextureMgrUI->delTextureButton )
-    {
-        if( m_SelectedTexItem )
-        {
-            vector< Geom* > select_vec = veh->GetActiveGeomPtrVec();
-            select_vec[0]->m_GuiDraw.getTextureMgr()->RemoveTexture( m_SelectedTexItem->TexInfo->GetID() );
-
-            ResetCurrentSelected();
-        }
-    }
-    m_ScreenMgr->SetUpdateFlag( true );
-}
-
-void ManageTextureScreen::UpdateCurrentSelected()
+void ManageTextureScreenPrivate::UpdateCurrentSelected()
 {
     m_SelectedTexItem = NULL;
 
     for( int i = 0; i < ( int )m_TexDropDownList.size(); i++ )
     {
-        if( m_TexDropDownList[i].GUIIndex == m_TextureMgrUI->textureChoice->value() )
+        if( m_TexDropDownList[i].GUIIndex == Ui.textureChoice->currentIndex() )
         {
             m_SelectedTexItem = &m_TexDropDownList[i];
             break;
@@ -271,7 +279,11 @@ void ManageTextureScreen::UpdateCurrentSelected()
     }
 }
 
-void ManageTextureScreen::ResetCurrentSelected()
+void ManageTextureScreenPrivate::ResetCurrentSelected()
 {
     m_SelectedTexItem = NULL;
 }
+
+ManageTextureScreen::~ManageTextureScreen() {}
+
+#include "ManageTextureScreen.moc"
