@@ -8,29 +8,13 @@
 #ifndef SCREENBASE__INCLUDED_
 #define SCREENBASE__INCLUDED_
 
-#define QPoint QQPoint
-#include <FL/Fl.H>
-#undef QPoint
-
-#include <vector>
-#include <map>
-
-#include "GuiDevice.h"
-#include "GroupLayout.h"
-#include "SubGLWindow.h"
-#include <QtGlobal>
-
 #include "VspScreenQt.h"
-#include "GroupLayout.h"
-
-#include "VSPWindow.h"
 
 class QWidget;
 class QScrollArea;
 class ScreenMgr;
 class Vehicle;
 class Geom;
-
 
 class BasicScreenPrivate;
 /// A Screen with a Title
@@ -40,7 +24,7 @@ class BasicScreen : public VspScreenQt
 public:
     BasicScreen( ScreenMgr*, int w, int h, const std::string & title );
     ~BasicScreen();
-    void SetTitle( const string & title );
+    void SetTitle( const std::string & title );
 protected:
     BasicScreen( BasicScreenPrivate&, ScreenMgr* );
 };
@@ -51,11 +35,11 @@ class TabScreen : public BasicScreen
 {
     VSP_DECLARE_PRIVATE( TabScreen )
 public:
-    TabScreen( ScreenMgr* mgr, int w, int h, const string & title, int baseymargin = 0 );
+    TabScreen( ScreenMgr* mgr, int w, int h, const std::string & title, int baseymargin = 0 );
     ~TabScreen();
 
-    virtual QWidget* AddTab( const string& title );
-    virtual QWidget* AddTab( const string& title, int indx );
+    virtual QWidget* AddTab( const std::string& title );
+    virtual QWidget* AddTab( const std::string& title, int indx );
     virtual QWidget* GetTab( int index );
 
     virtual void AddTab( QWidget* grp );
@@ -75,7 +59,7 @@ class GeomScreen : public TabScreen
 {
     VSP_DECLARE_PRIVATE( GeomScreen )
 public:
-    GeomScreen( ScreenMgr* mgr, int w, int h, const string & title );
+    GeomScreen( ScreenMgr* mgr, int w, int h, const std::string & title );
     ~GeomScreen();
 protected:
     GeomScreen( GeomScreenPrivate &, ScreenMgr * );
@@ -87,23 +71,20 @@ class SkinScreen : public GeomScreen
 {
     VSP_DECLARE_PRIVATE( SkinScreen )
 public:
-    SkinScreen( ScreenMgr* mgr, int w, int h, const string & title );
+    SkinScreen( ScreenMgr* mgr, int w, int h, const std::string & title );
     ~SkinScreen();
 protected:
     SkinScreen( SkinScreenPrivate &, ScreenMgr * );
 };
 
 
-class XSecViewScreen : public VspScreenFLTK
+class XSecViewScreenPrivate;
+class XSecViewScreen : public BasicScreen
 {
+    VSP_DECLARE_PRIVATE( XSecViewScreen )
 public:
     XSecViewScreen( ScreenMgr* mgr );
-    virtual ~XSecViewScreen() {}
-    virtual bool Update();
-
-protected:
-
-    VSPGUI::VspSubGlWindow * m_GlWin;
+    ~XSecViewScreen();
 };
 
 #endif // SCREENBASE__INCLUDED_

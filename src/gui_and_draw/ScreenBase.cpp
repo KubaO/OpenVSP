@@ -16,7 +16,7 @@
 #include "Display.h"
 #include "Viewport.h"
 #include "Camera.h"
-#include "ScreenMgr.h"
+#include "SubGLWindow.h"
 #include "MaterialEditScreen.h"
 #include "UiBuilder.h"
 #include "VSPWindow.h"
@@ -917,6 +917,8 @@ void GeomScreenPrivate::SubSurfDispGroup( UiGroup* group )
     }
 }
 
+GeomScreen::~GeomScreen() {}
+
 //=====================================================================//
 //=====================================================================//
 //=====================================================================//
@@ -1231,34 +1233,45 @@ void SkinScreenPrivate::GuiDeviceCallBack( GuiDevice* gui_device )
     GeomScreenPrivate::GuiDeviceCallBack( gui_device );
 }
 
+SkinScreen::~SkinScreen() {}
+
 //=====================================================================//
 //=====================================================================//
 //=====================================================================//
 
-XSecViewScreen::XSecViewScreen( ScreenMgr* mgr ) : VspScreenFLTK( mgr )//BasicScreen( mgr, 300, 300, "XSec View" )
+class XSecViewScreenPrivate : public BasicScreenPrivate
 {
-    int x = m_FLTK_Window->x();
-    int y = m_FLTK_Window->y();
-    int w = m_FLTK_Window->w();
-    int h = m_FLTK_Window->h();
+    Q_DECLARE_PUBLIC( XSecViewScreen )
+    VSPGUI::VspSubGlWindow glWin;
 
-    m_FLTK_Window->begin();
-    m_GlWin = new VSPGUI::VspSubGlWindow( x, y, w, h, DrawObj::VSP_XSEC_SCREEN);
-    m_FLTK_Window->end();
+    XSecViewScreenPrivate( XSecViewScreen * );
+    bool Update() Q_DECL_OVERRIDE;
+};
+VSP_DEFINE_PRIVATE( XSecViewScreen )
 
-    m_GlWin->getGraphicEngine()->getDisplay()->changeView( VSPGraphic::Common::VSP_CAM_TOP );
-    m_GlWin->getGraphicEngine()->getDisplay()->getViewport()->showGridOverlay( false );
-    m_GlWin->getGraphicEngine()->getDisplay()->getCamera()->setZoomValue(.005);
+XSecViewScreenPrivate::XSecViewScreenPrivate( XSecViewScreen * q ) :
+    BasicScreenPrivate( q, 300, 300, "XSec View" ),
+    glWin( DrawObj::VSP_XSEC_SCREEN )
+{
+    layout.addWidget( &glWin );
+
+    VSPGraphic::Display * disp = glWin.getGraphicEngine()->getDisplay();
+    disp->changeView( VSPGraphic::Common::VSP_CAM_TOP );
+    disp->getViewport()->showGridOverlay( false );
+    disp->getCamera()->setZoomValue(.005);
 }
 
-bool XSecViewScreen::Update()
+XSecViewScreen::XSecViewScreen( ScreenMgr* mgr ) :
+    BasicScreen( *new XSecViewScreenPrivate( this ), mgr )
 {
-    assert( m_ScreenMgr );
+}
 
-    m_GlWin->update();
-    m_GlWin->redraw();
-
+bool XSecViewScreenPrivate::Update()
+{
+    glWin.update();
     return true;
 }
+
+XSecViewScreen::~XSecViewScreen() {}
 
 #include "ScreenBase.moc"
