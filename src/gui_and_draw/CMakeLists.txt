@@ -92,7 +92,6 @@ SelectFileScreen.cpp
 SetEditorScreen.cpp
 StackScreen.cpp
 SubGLWindow.cpp
-SubGLWindow.cpp
 TypeEditorScreen.cpp
 UiBuilder.cpp
 UiSignalBlocker.cpp
@@ -148,7 +147,6 @@ SelectFileScreen.h
 SetEditorScreen.h
 StackScreen.h
 SubGLWindow.h
-SubGLWindow.h
 TypeEditorScreen.h
 UiBuilder.h
 UiSignalBlocker.h
@@ -168,7 +166,7 @@ screens
 util
 )
 
-QT5_USE_MODULES(gui_and_draw Widgets)
+QT5_USE_MODULES(gui_and_draw Widgets OpenGL)
 
 TARGET_LINK_LIBRARIES(gui_and_draw
 ${GLEW_LIBRARY}
