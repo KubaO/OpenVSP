@@ -25,10 +25,10 @@ class ManageLabelScreenPrivate : public QDialog, public VspScreenQtPrivate
 
     Ui::LabelScreen Ui;
 
-    SliderQt RedSlider;
-    SliderQt GreenSlider;
-    SliderQt BlueSlider;
-    SliderQt SizeSlider;
+    Slider RedSlider;
+    Slider GreenSlider;
+    Slider BlueSlider;
+    Slider SizeSlider;
 
     std::vector<DrawObj> LabelList;
     std::vector<DrawObj> PickList;

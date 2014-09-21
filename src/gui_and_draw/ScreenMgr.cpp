@@ -308,4 +308,13 @@ int ScreenMgr::GlobalHandler(int event)
     return 0;
 }
 
+void ScreenMgr::ShowReturnToAPI()
+{
+    ( ( MainVSPScreen* ) m_ScreenVec[VSP_MAIN_SCREEN] )->ShowReturnToAPI();
+};
+void ScreenMgr::HideReturnToAPI()
+{
+    ( ( MainVSPScreen* ) m_ScreenVec[VSP_MAIN_SCREEN] )->HideReturnToAPI();
+};
+
 #include "ScreenMgr.moc"

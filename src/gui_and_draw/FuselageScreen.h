@@ -11,7 +11,7 @@
 #if !defined(FUSELAGESCREEN__INCLUDED_)
 #define FUSELAGESCREEN__INCLUDED_
 
-#include "ScreenBase.h"
+#include "ScreenBaseFLTK.h"
 #include "GuiDevice.h"
 #include "GroupLayout.h"
 

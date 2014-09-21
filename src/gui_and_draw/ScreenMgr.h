@@ -11,16 +11,15 @@
 #if !defined(SCREENMGR__INCLUDED_)
 #define SCREENMGR__INCLUDED_
 
-#include "ScreenBase.h"
 #include "Vehicle.h"
 #include "MessageMgr.h"
 #include "SelectFileScreen.h"
 #include "PickSetScreen.h"
-#include "MainVSPScreen.h"
 
 #include <vector>
 #include <string>
 
+class MainVSPScreen;
 
 //==== ScreenMgr ====//
 class ScreenMgr : MessageBase
@@ -97,14 +96,8 @@ public:
     {
         m_RunGUI = r;
     };
-    void ShowReturnToAPI()
-    {
-        ( ( MainVSPScreen* ) m_ScreenVec[VSP_MAIN_SCREEN] )->ShowReturnToAPI();
-    };
-    void HideReturnToAPI()
-    {
-        ( ( MainVSPScreen* ) m_ScreenVec[VSP_MAIN_SCREEN] )->HideReturnToAPI();
-    };
+    void ShowReturnToAPI();
+    void HideReturnToAPI();
 
 protected:
 

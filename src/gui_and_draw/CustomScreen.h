@@ -11,7 +11,7 @@
 #if !defined(CUSTOMSCREEN__INCLUDED_)
 #define CUSTOMSCREEN__INCLUDED_
 
-#include "ScreenBase.h"
+#include "ScreenBaseFLTK.h"
 #include "GuiDevice.h"
 #include "GuiDeviceEnums.h"
 #include "CustomGeom.h"

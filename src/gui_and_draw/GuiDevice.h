@@ -6,7 +6,7 @@
 //
 //////////////////////////////////////////////////////////////////////
 
-#if !defined(GUIDEVICE__INCLUDED_)
+#ifndef GUIDEVICE__INCLUDED_
 #define GUIDEVICE__INCLUDED_
 
 #define QPoint QQPoint
@@ -142,6 +142,8 @@ protected:
     int m_ResizableWidgetIndex;
     vector< Fl_Widget* > m_WidgetVec;
 };
+
+namespace FLTK {
 
 //==== Parm Button ====//
 class ParmButton : public GuiDeviceFLTK
@@ -946,4 +948,6 @@ protected:
 
 };
 
-#endif // !defined(GUIDEVICE__INCLUDED_)
+} // namespace FLTK
+
+#endif // GUIDEVICE__INCLUDED_

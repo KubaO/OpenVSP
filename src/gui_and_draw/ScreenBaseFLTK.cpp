@@ -7,9 +7,7 @@
 //
 //////////////////////////////////////////////////////////////////////
 
-#if 0
-
-#include "ScreenBase.h"
+#include "ScreenBaseFLTK.h"
 #include "ScreenMgr.h"
 #include "ParmMgr.h"
 #include "SubSurfaceMgr.h"
@@ -1208,7 +1206,7 @@ XSecViewScreen::XSecViewScreen( ScreenMgr* mgr ) : BasicScreen( mgr, 300, 300, "
 
 
     m_FLTK_Window->begin();
-    m_GlWin = new VSPGUI::VspSubGlWindow( x, y, w, h, DrawObj::VSP_XSEC_SCREEN);
+    m_GlWin = new VSPGUI::VspSubGlWindowFLTK( x, y, w, h, DrawObj::VSP_XSEC_SCREEN);
     m_FLTK_Window->end();
 
     m_GlWin->getGraphicEngine()->getDisplay()->changeView( VSPGraphic::Common::VSP_CAM_TOP );
@@ -1225,5 +1223,3 @@ bool XSecViewScreen::Update()
 
     return true;
 }
-
-#endif

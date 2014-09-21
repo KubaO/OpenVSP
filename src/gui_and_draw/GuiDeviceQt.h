@@ -42,95 +42,210 @@ protected:
     //==== First Widget Is Assumed Resizable For Set Width =====//
     virtual void AddWidget( QWidget* w, bool resizable_flag = false );
     virtual void ClearAllWidgets();
+
+    /// \todo Temporary for development purposes
+    void SetValAndLimits( Parm* ) Q_DECL_OVERRIDE {}
 };
 
-class ToggleButtonQtPrivate;
+class ToggleButtonPrivate;
 /// Toggle type button with light. Linked to a (BoolParm).
-class ToggleButtonQt : public GuiDeviceQt
+class ToggleButton : public GuiDeviceQt
 {
-    VSP_DECLARE_PRIVATE( ToggleButtonQt )
+    VSP_DECLARE_PRIVATE( ToggleButton )
 public:
-    ToggleButtonQt();
+    ToggleButton();
     void Init( VspScreenQt* screen, QAbstractButton* button );
     QAbstractButton * GetButton();
-    ~ToggleButtonQt();
+    ~ToggleButton();
 protected:
     void SetValAndLimits( Parm* p ) Q_DECL_OVERRIDE;
 };
 
-class SliderQtPrivate;
+class SliderPrivate;
 /// A linear slider. Linked to a (Parm/IntParm).
-class SliderQt : public GuiDeviceQt
+class Slider : public GuiDeviceQt
 {
-    VSP_DECLARE_PRIVATE( SliderQt )
+    VSP_DECLARE_PRIVATE( Slider )
 public:
-    SliderQt();
+    Slider();
     void Init( VspScreenQt* screen, AbstractDoubleSlider* slider_widget, double range );
     void SetRange( double range );
-    ~SliderQt();
+    ~Slider();
 protected:
-    SliderQt( SliderQtPrivate & );
+    Slider( SliderPrivate & );
     void SetValAndLimits( Parm* p ) Q_DECL_OVERRIDE;
 };
 
-class LogSliderQtPrivate;
+class LogSliderPrivate;
 /// A log10 slider. Linked to a (Parm/IntParm).
-class LogSliderQt : public SliderQt
+class LogSlider : public Slider
 {
-    VSP_DECLARE_PRIVATE( LogSliderQt )
+    VSP_DECLARE_PRIVATE( LogSlider )
 public:
-    LogSliderQt();
-    ~LogSliderQt();
+    LogSlider();
+    ~LogSlider();
 protected:
     void SetValAndLimits( Parm* p ) Q_DECL_OVERRIDE;
 };
 
-class InputQtPrivate;
-class InputQt : public GuiDeviceQt
+class InputPrivate;
+class Input : public GuiDeviceQt
 {
-    VSP_DECLARE_PRIVATE( InputQt )
+    VSP_DECLARE_PRIVATE( Input )
 public:
-    InputQt();
+    Input();
     void Init( VspScreenQt* screen, QDoubleSpinBox* input, int decimals, QAbstractButton* parm_button = NULL );
     void SetDecimals( int );
     void SetButtonNameUpdate( bool flag );
-    ~InputQt();
+    ~Input();
 protected:
     void SetValAndLimits( Parm* p ) Q_DECL_OVERRIDE;
 };
 
-class ParmButtonQtPrivate;
+class ParmButtonPrivate;
 /// A button with a label. Linked to a (Parm).
-class ParmButtonQt : public GuiDeviceQt
+class ParmButton : public GuiDeviceQt
 {
-    VSP_DECLARE_PRIVATE( ParmButtonQt )
+    VSP_DECLARE_PRIVATE( ParmButton )
 public:
-    ParmButtonQt();
+    ParmButton();
     void Init( VspScreenQt* screen, QAbstractButton* button );
-    void Update( const string& parm_id ) Q_DECL_OVERRIDE;
+    void Update( const std::string& parm_id ) Q_DECL_OVERRIDE;
     void SetButtonNameUpdate( bool flag );
-    ~ParmButtonQt();
+    ~ParmButton();
 protected:
     void SetValAndLimits( Parm* p ) Q_DECL_OVERRIDE;
 };
 
-class SliderInputQtPrivate;
+class SliderInputPrivate;
 /// Combo of a Slider (or LogSlider) and Input and optional Parm Button. Linked to a (Parm).
-class SliderInputQt : public GuiDeviceQt
+class SliderInput : public GuiDeviceQt
 {
-    VSP_DECLARE_PRIVATE( SliderInputQt )
+    VSP_DECLARE_PRIVATE( SliderInput )
 public:
-    SliderInputQt();
+    SliderInput();
     void Init( VspScreenQt* screen, AbstractDoubleSlider*, QDoubleSpinBox*,
                double range, int decimals, QAbstractButton* parm_button = 0,
                bool log_slider = false );
-    void Update( const string& parm_id ) Q_DECL_OVERRIDE;
+    void Update( const std::string& parm_id ) Q_DECL_OVERRIDE;
     void SetRange( double range );
     void SetDecimals( int decimals );
     void SetButtonNameUpdate( bool flag );
-    ~SliderInputQt();
+    ~SliderInput();
 protected:
     virtual void SetValAndLimits( Parm* ) Q_DECL_OVERRIDE;
+};
+
+
+class StringInputPrivate;
+class StringInput : public GuiDeviceQt
+{
+    VSP_DECLARE_PRIVATE( StringInput )
+public:
+    StringInput();
+    void Update( const string & val );
+    string GetString();
+};
+
+
+class ColorPickerPrivate;
+class ColorPicker : public GuiDeviceQt
+{
+    VSP_DECLARE_PRIVATE( ColorPicker )
+public:
+    ColorPicker();
+    void Update( const vec3d & rgb );
+    vec3d GetColor();
+    vec3d GetIndexRGB( int index );
+};
+
+
+class TriggerButtonPrivate;
+class TriggerButton : public GuiDeviceQt
+{
+    VSP_DECLARE_PRIVATE( TriggerButton )
+public:
+    TriggerButton();
+};
+
+
+class ChoicePrivate;
+class Choice : public GuiDeviceQt
+{
+    VSP_DECLARE_PRIVATE( Choice )
+public:
+    Choice();
+
+    void SetVal( int val );
+    int  GetVal() const;
+    void ClearItems();
+    void AddItem( const string& item );
+    vector< string > GetItems() const;
+    void UpdateItems();
+    void SetButtonNameUpdate( bool flag );
+};
+
+
+class CounterPrivate;
+class Counter : public GuiDeviceQt
+{
+    VSP_DECLARE_PRIVATE( Counter )
+public:
+    Counter();
+};
+
+
+class SliderAdjRangeInputPrivate;
+class SliderAdjRangeInput : public GuiDeviceQt
+{
+    VSP_DECLARE_PRIVATE( SliderAdjRangeInput )
+public:
+    SliderAdjRangeInput();
+};
+
+
+class SliderAdjRange2InputPrivate;
+class SliderAdjRange2Input : public GuiDeviceQt
+{
+    VSP_DECLARE_PRIVATE( SliderAdjRange2Input )
+public:
+    SliderAdjRange2Input();
+
+    void Update( int slider_id, const string& parm_id_in1, const string& parm_id_in2 );
+};
+
+
+class ToggleRadioGroupPrivate;
+class ToggleRadioGroup : public GuiDeviceQt
+{
+    VSP_DECLARE_PRIVATE( ToggleRadioGroup )
+public:
+    ToggleRadioGroup();
+    void AddButton( QAbstractButton* button );
+    void SetValMapVec( vector< int > & val_map_vec );
+};
+
+
+class CheckButtonBitPrivate;
+class CheckButtonBit : public GuiDeviceQt
+{
+    VSP_DECLARE_PRIVATE( CheckButtonBit )
+public:
+    CheckButtonBit();
+};
+
+
+class IndexSelectorPrivate;
+class IndexSelector : public GuiDeviceQt
+{
+    VSP_DECLARE_PRIVATE( IndexSelector )
+public:
+    IndexSelector();
+    void SetIndex( int index );
+    int  GetIndex() const;
+
+    void SetMinMaxLimits( int min, int max );
+    void SetBigSmallIncrements( int big_inc, int small_inc );
 };
 
 #endif // GUIDEVICEQT_H

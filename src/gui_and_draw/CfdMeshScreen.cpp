@@ -11,11 +11,9 @@
 #include "GridDensity.h"
 #include "CfdMeshMgr.h"
 #include "StreamUtil.h"
-#include "ScreenBase.h"
 #include "GuiDeviceQt.h"
 #include "Vehicle.h"
 #include "ScreenMgr.h"
-#include <FL/Fl_File_Chooser.H>
 #include "VspScreenQt_p.h"
 #include "ui_CfdMeshScreen.h"
 
@@ -26,48 +24,48 @@ class CfdMeshScreenPrivate : public QDialog, public VspScreenQtPrivate {
     Q_PRIVATE_SLOT( self(), void SetUpdateFlag() )
     Ui::CfdMeshScreen Ui;
 
-    ToggleButtonQt DrawMeshButton;
-    ToggleButtonQt DrawSourceButton;
-    ToggleButtonQt DrawFarButton;
-    ToggleButtonQt DrawFarPreButton;
-    ToggleButtonQt DrawBadButton;
-    ToggleButtonQt DrawSymmButton;
-    ToggleButtonQt DrawWakeButton;
-    ToggleButtonQt DrawTagsButton;
+    ToggleButton DrawMeshButton;
+    ToggleButton DrawSourceButton;
+    ToggleButton DrawFarButton;
+    ToggleButton DrawFarPreButton;
+    ToggleButton DrawBadButton;
+    ToggleButton DrawSymmButton;
+    ToggleButton DrawWakeButton;
+    ToggleButton DrawTagsButton;
 
-    ToggleButtonQt DatToggleButton;
-    ToggleButtonQt KeyToggleButton;
-    ToggleButtonQt ObjToggleButton;
-    ToggleButtonQt PolyToggleButton;
-    ToggleButtonQt StlToggleButton;
-    ToggleButtonQt TriToggleButton;
-    ToggleButtonQt GmshToggleButton;
-    ToggleButtonQt SrfToggleButton;
-    ToggleButtonQt TkeyToggleButton;
+    ToggleButton DatToggleButton;
+    ToggleButton KeyToggleButton;
+    ToggleButton ObjToggleButton;
+    ToggleButton PolyToggleButton;
+    ToggleButton StlToggleButton;
+    ToggleButton TriToggleButton;
+    ToggleButton GmshToggleButton;
+    ToggleButton SrfToggleButton;
+    ToggleButton TkeyToggleButton;
 
-    ToggleButtonQt IntersectSubSurfsButton;
+    ToggleButton IntersectSubSurfsButton;
 
-    SliderInputQt LengthSlider;
-    SliderInputQt RadiusSlider;
+    SliderInput LengthSlider;
+    SliderInput RadiusSlider;
 
-    SliderInputQt Length2Slider;
-    SliderInputQt Radius2Slider;
+    SliderInput Length2Slider;
+    SliderInput Radius2Slider;
 
-    SliderInputQt U1Slider;
-    SliderInputQt W1Slider;
+    SliderInput U1Slider;
+    SliderInput W1Slider;
 
-    SliderInputQt U2Slider;
-    SliderInputQt W2Slider;
+    SliderInput U2Slider;
+    SliderInput W2Slider;
 
-    SliderInputQt BodyEdgeSizeSlider;
-    SliderInputQt MinEdgeSizeSlider;
-    SliderInputQt MaxGapSizeSlider;
-    SliderInputQt NumCircSegmentSlider;
-    SliderInputQt GrowRatioSlider;
+    SliderInput BodyEdgeSizeSlider;
+    SliderInput MinEdgeSizeSlider;
+    SliderInput MaxGapSizeSlider;
+    SliderInput NumCircSegmentSlider;
+    SliderInput GrowRatioSlider;
 
-    SliderInputQt FarXScaleSlider;
-    SliderInputQt FarYScaleSlider;
-    SliderInputQt FarZScaleSlider;
+    SliderInput FarXScaleSlider;
+    SliderInput FarYScaleSlider;
+    SliderInput FarZScaleSlider;
 
 #if 0
     FractParmSlider FarXScaleSlider;
@@ -75,16 +73,16 @@ class CfdMeshScreenPrivate : public QDialog, public VspScreenQtPrivate {
     FractParmSlider FarZScaleSlider;
 #endif
 
-    SliderInputQt FarXLocationSlider;
-    SliderInputQt FarYLocationSlider;
-    SliderInputQt FarZLocationSlider;
+    SliderInput FarXLocationSlider;
+    SliderInput FarYLocationSlider;
+    SliderInput FarZLocationSlider;
 
-    SliderInputQt FarEdgeLengthSlider;
-    SliderInputQt FarGapSizeSlider;
-    SliderInputQt FarCircSegmentSlider;
+    SliderInput FarEdgeLengthSlider;
+    SliderInput FarGapSizeSlider;
+    SliderInput FarCircSegmentSlider;
 
-    SliderInputQt WakeScaleSlider;
-    SliderInputQt WakeAngleSlider;
+    SliderInput WakeScaleSlider;
+    SliderInput WakeAngleSlider;
 
     map< string, int > CompIDMap;
     vector< string > GeomVec;

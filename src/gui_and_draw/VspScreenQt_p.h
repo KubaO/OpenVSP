@@ -8,6 +8,7 @@
 #if !defined(VSPSCREENQT_P_INCLUDED_)
 #define VSPSCREENQT_P_INCLUDED_
 
+#include "VspScreenQt.h"
 #include <QScopedValueRollback>
 #include <QDebug>
 

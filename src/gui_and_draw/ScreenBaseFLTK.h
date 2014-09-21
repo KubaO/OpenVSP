@@ -8,10 +8,8 @@
 //
 //////////////////////////////////////////////////////////////////////
 
-#if !defined(SCREENBASE__INCLUDED_)
-#define SCREENBASE__INCLUDED_
-
-#if 0
+#ifndef SCREENBASEFLTK__INCLUDED_
+#define SCREENBASEFLTK__INCLUDED_
 
 #define QPoint QQPoint
 #include <FL/Fl.H>
@@ -30,7 +28,7 @@
 
 #include "GuiDevice.h"
 #include "GroupLayout.h"
-#include "SubGLWindow.h"
+#include "SubGLWindowFLTK.h"
 #include <QtGlobal>
 
 #include "VspScreen.h"
@@ -41,6 +39,9 @@
 class ScreenMgr;
 class Vehicle;
 class Geom;
+
+namespace FLTK
+{
 
 //==== Basic Screen ====//
 class BasicScreen : public VspScreenFLTK
@@ -283,9 +284,11 @@ public:
 
 protected:
 
-    VSPGUI::VspSubGlWindow * m_GlWin;
+    VSPGUI::VspSubGlWindowFLTK * m_GlWin;
 };
 
-#endif
+} // namespace FLTK
 
-#endif // !defined(SCREENBASE__INCLUDED_)
+using namespace FLTK;
+
+#endif // SCREENBASEFLTK__INCLUDED_

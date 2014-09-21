@@ -10,8 +10,8 @@
 #if !defined(AFX_FEASTRUCTSCREEN_H__015D1220_857A_11D7_AC31_0003473A025A__INCLUDED_)
 #define AFX_FEASTRUCTSCREEN_H__015D1220_857A_11D7_AC31_0003473A025A__INCLUDED_
 
+#include "ScreenBaseFLTK.h"
 #include "feaStructFlScreen.h"
-#include "ScreenBase.h"
 #include "GuiDevice.h"
 #include "Vehicle.h"
 #include "ScreenMgr.h"

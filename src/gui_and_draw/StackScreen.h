@@ -11,7 +11,7 @@
 #if !defined(STACKSCREEN__INCLUDED_)
 #define STACKSCREEN__INCLUDED_
 
-#include "ScreenBase.h"
+#include "ScreenBaseFLTK.h"
 #include "GuiDevice.h"
 #include "GroupLayout.h"
 

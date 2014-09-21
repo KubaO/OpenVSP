@@ -12,7 +12,8 @@
 #define MATERIALEDITSCREEN__INCLUDED_
 
 #include "ScreenMgr.h"
-#include "ScreenBase.h"
+#include "ScreenBaseFLTK.h"
+#include "GroupLayout.h"
 
 class MaterialEditScreen : public BasicScreen
 {

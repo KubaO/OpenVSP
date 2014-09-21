@@ -8,7 +8,7 @@
 #ifndef MESHSCREEN_H_
 #define MESHSCREEN_H_
 
-#include "ScreenBase.h"
+#include "ScreenBaseFLTK.h"
 #include "GuiDevice.h"
 
 #include <FL/Fl.H>

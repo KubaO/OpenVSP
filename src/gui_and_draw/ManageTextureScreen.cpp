@@ -46,7 +46,7 @@ ManageTextureScreen::ManageTextureScreen( ScreenMgr * mgr ) : VspScreenFLTK( mgr
     // Add GL 2D Window.
     Fl_Widget * w = m_TextureMgrUI->texGLGroup;
     m_TextureMgrUI->texGLGroup->begin();
-    m_GlWin = new VSPGUI::VspSubGlWindow( w->x(), w->y(), w->w(), w->h(), DrawObj::VSP_TEX_PREVIEW );
+    m_GlWin = new VSPGUI::VspSubGlWindowFLTK( w->x(), w->y(), w->w(), w->h(), DrawObj::VSP_TEX_PREVIEW );
     m_TextureMgrUI->texGLGroup->end();
 
     ResetCurrentSelected();

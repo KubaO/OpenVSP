@@ -11,7 +11,7 @@
 #if !defined(WINGSCREEN__INCLUDED_)
 #define WINGSCREEN__INCLUDED_
 
-#include "ScreenBase.h"
+#include "ScreenBaseFLTK.h"
 #include "GuiDevice.h"
 #include "GroupLayout.h"
 #include "WingGeom.h"

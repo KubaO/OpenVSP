@@ -1,8 +1,9 @@
 #ifndef _VSP_GUI_LIGHTING_MANAGER_SCREEN_H
 #define _VSP_GUI_LIGHTING_MANAGER_SCREEN_H
 
-#include "ScreenBase.h"
+#include "ScreenBaseFLTK.h"
 #include "GuiDevice.h"
+#include "GroupLayout.h"
 
 #include <vector>
 

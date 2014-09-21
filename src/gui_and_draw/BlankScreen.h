@@ -1,8 +1,9 @@
 #if !defined(BLANKSCREEN__INCLUDED_)
 #define BLANKSCREEN__INCLUDED_
 
-#include "ScreenBase.h"
+#include "ScreenBaseFLTK.h"
 #include "GuiDevice.h"
+#include "GroupLayout.h"
 
 #include <FL/Fl.H>
 

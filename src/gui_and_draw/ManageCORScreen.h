@@ -1,7 +1,7 @@
 #ifndef _VSP_GUI_COR_MANAGER_SCREEN_H
 #define _VSP_GUI_COR_MANAGER_SCREEN_H
 
-#include "ScreenBase.h"
+#include "ScreenBaseFLTK.h"
 #include "DrawObj.h"
 
 /*!

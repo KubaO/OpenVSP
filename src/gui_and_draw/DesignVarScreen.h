@@ -11,7 +11,8 @@
 #define DESIGNVARSCREEN_H
 
 #include "ScreenMgr.h"
-#include "ScreenBase.h"
+#include "ScreenBaseFLTK.h"
+#include "GroupLayout.h"
 #include "Vehicle.h"
 #include "GuiDevice.h"
 #include "DesignVarMgr.h"

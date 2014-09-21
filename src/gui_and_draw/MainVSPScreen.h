@@ -11,7 +11,7 @@
 #if !defined(MAINSCREEN__INCLUDED_)
 #define MAINSCREEN__INCLUDED_
 
-#include "ScreenBase.h"
+#include "ScreenBaseFLTK.h"
 
 #include <FL/Fl.H>
 #include "mainScreen.h"
@@ -50,9 +50,9 @@ public:
 
     virtual void ExitVSP();
 
-    string CheckAddVSP3Ext( string fname );
+    string CheckAddVSP3Ext( std::string fname );
 
-    void SetFileLabel( string fname );
+    void SetFileLabel( std::string fname );
     /*!
     * Return reference to OpenGL Window.
     */

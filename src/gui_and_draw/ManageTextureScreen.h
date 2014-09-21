@@ -1,12 +1,12 @@
 #ifndef _VSP_GUI_TEXTURE_MANAGER_SCREEN_H
 #define _VSP_GUI_TEXTURE_MANAGER_SCREEN_H
 
-#include "ScreenBase.h"
+#include "ScreenBaseFLTK.h"
 #include "GuiDevice.h"
 
 namespace VSPGUI
 {
-class VspSubGlWindow;
+class VspSubGlWindowFLTK;
 }
 
 class TextureMgrUI;
@@ -63,7 +63,7 @@ private:
 
     TexDropDownItem * m_SelectedTexItem;
 
-    VSPGUI::VspSubGlWindow * m_GlWin;
+    VSPGUI::VspSubGlWindowFLTK * m_GlWin;
 
     std::vector<CompDropDownItem> m_CompDropDownList;
     std::vector<TexDropDownItem> m_TexDropDownList;

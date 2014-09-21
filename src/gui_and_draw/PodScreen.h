@@ -11,7 +11,8 @@
 #if !defined(PODSCREEN__INCLUDED_)
 #define PODSCREEN__INCLUDED_
 
-#include "ScreenBase.h"
+#include "ScreenBaseFLTK.h"
+#include "GroupLayout.h"
 #include "GuiDevice.h"
 
 #include <FL/Fl.H>

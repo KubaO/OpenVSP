@@ -29,16 +29,16 @@ class ParmLinkScreenPrivate : public QDialog, public VspScreenQtPrivate
     Q_PRIVATE_SLOT( self(), void SetUpdateFlag() )
     Ui::ParmLinkScreen Ui;
 
-    SliderInputQt OffsetSlider;
-    SliderInputQt ScaleSlider;
-    SliderInputQt LowerLimitSlider;
-    SliderInputQt UpperLimitSlider;
+    SliderInput OffsetSlider;
+    SliderInput ScaleSlider;
+    SliderInput LowerLimitSlider;
+    SliderInput UpperLimitSlider;
 
     vector< string > FindParmNames( bool A_flag, vector< string > & parm_id_vec );
 
 #if 0
-    GroupLayoutQt* User1Group;
-    GroupLayoutQt* User2Group;
+    GroupLayout* User1Group;
+    GroupLayout* User2Group;
     enum { NUUser_SLIDERS = 10, };
     SliderAdjRangeInput UserSlider[NUUser_SLIDERS];
 #endif

@@ -11,9 +11,10 @@
 #define CLIPPINGSCREEN_H
 
 #include "ScreenMgr.h"
-#include "ScreenBase.h"
+#include "ScreenBaseFLTK.h"
 #include "Vehicle.h"
 #include "GuiDevice.h"
+#include "GroupLayout.h"
 
 #include <FL/Fl_Text_Buffer.H>
 #include <FL/Fl_Text_Display.H>

@@ -19,6 +19,7 @@
 
 using std::max;
 using std::min;
+using namespace FLTK;
 
 GuiDevice::GuiDevice() :
     m_Type(-1),

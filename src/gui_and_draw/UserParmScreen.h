@@ -11,8 +11,9 @@
 #if !defined(VSPTYPEUSERPARMSCREEN__INCLUDED_)
 #define VSPTYPEUSERPARMSCREEN__INCLUDED_
 
-#include "ScreenBase.h"
+#include "ScreenBaseFLTK.h"
 #include "GuiDevice.h"
+#include "GroupLayout.h"
 
 #include <FL/Fl.H>
 #include "userParmFlScreen.h"

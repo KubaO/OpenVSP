@@ -11,7 +11,7 @@
 #define PARMDEBUGSCREEN_H
 
 #include "ScreenMgr.h"
-#include "ScreenBase.h"
+#include "ScreenBaseFLTK.h"
 #include "Vehicle.h"
 #include "GuiDevice.h"
 

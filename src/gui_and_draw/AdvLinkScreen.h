@@ -11,8 +11,9 @@
 #if !defined(VSPTYPEADVLINKSCREEN__INCLUDED_)
 #define VSPTYPEADVLINKSCREEN__INCLUDED_
 
-#include "ScreenBase.h"
+#include "ScreenBaseFLTK.h"
 #include "GuiDevice.h"
+#include "GroupLayout.h"
 
 #include <FL/Fl.H>
 #include "advLinkFlScreen.h"
@@ -63,14 +64,10 @@ protected:
     GroupLayout m_InputGroup;
     GroupLayout m_OutputGroup;
 
-
     TriggerButton m_DelInput;
     TriggerButton m_DelAllInput;
     TriggerButton m_DelOutput;
     TriggerButton m_DelAllOutput;
-
-
-
 };
 
 

@@ -23,6 +23,7 @@
 #include <string>
 
 using std::string;
+using namespace FLTK;
 
 class GroupBankRoundButton : public Fl_Round_Button
 {
