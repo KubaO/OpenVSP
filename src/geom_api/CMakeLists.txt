@@ -49,7 +49,7 @@ IF( NOT VSP_NO_GRAPHICS )
 	util
 	)
 
-	QT5_USE_MODULES( geom_api_g Widgets)
+	QT5_USE_MODULES( geom_api_g Widgets OpenGL )
 
 	set_target_properties( geom_api_g PROPERTIES COMPILE_FLAGS "-DVSP_USE_FLTK=1")
 

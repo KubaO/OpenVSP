@@ -168,7 +168,7 @@ screens
 util
 )
 
-QT5_USE_MODULES(gui_and_draw Widgets)
+QT5_USE_MODULES(gui_and_draw Widgets OpenGL)
 
 TARGET_LINK_LIBRARIES(gui_and_draw
 ${GLEW_LIBRARY}

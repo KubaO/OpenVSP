@@ -1,3 +1,10 @@
+//
+// This file is released under the terms of the NASA Open Source Agreement (NOSA)
+// version 1.3 as detailed in the LICENSE file which accompanies this software.
+//
+//
+//////////////////////////////////////////////////////////////////////
+
 #include "SubGLWindow.h"
 #include "VehicleMgr.h"
 #include "Vehicle.h"
@@ -9,93 +16,107 @@
 #include "Renderable.h"
 #include "Common.h"
 #include <vector>
-#include <assert.h>
+#include <cassert>
 
 using namespace VSPGraphic;
 
 namespace VSPGUI
 {
-VspSubGlWindow::VspSubGlWindow( int x, int y, int w , int h, DrawObj::ScreenEnum drawObjScreen )
-    : Fl_Gl_Window( x, y, w, h, "VSP Sub GL Window" )
+
+class VspSubGlWindowPrivate {
+    Q_DECLARE_PUBLIC( VspSubGlWindow )
+    VspSubGlWindow * const q_ptr;
+    VSPGraphic::GraphicEngine gEngine;
+    unsigned int id;
+    DrawObj::ScreenEnum linkedScreen;
+    bool initialized;
+
+    VspSubGlWindowPrivate( VspSubGlWindow *, DrawObj::ScreenEnum );
+    Scene * scene() {  return gEngine.getScene(); }
+    virtual void initGLEW();
+    virtual void update( std::vector<DrawObj *> objects );
+
+    void loadPointData( VSPGraphic::Renderable * destObj, DrawObj * drawObj );
+    void loadLineData( VSPGraphic::Renderable * destObj, DrawObj * drawObj );
+};
+
+VspSubGlWindowPrivate::VspSubGlWindowPrivate( VspSubGlWindow * q, DrawObj::ScreenEnum screen ) :
+    q_ptr( q ),
+    id( 0xFFFFFFFF ),
+    linkedScreen( screen ),
+    initialized( false )
 {
-    mode( FL_RGB | FL_ALPHA | FL_DEPTH | FL_DOUBLE | FL_MULTISAMPLE );
+    QGLFormat fmt( QGL::Rgba | QGL::AlphaChannel | QGL::DepthBuffer | QGL::DoubleBuffer | QGL::SampleBuffers );
+    q->setFormat( fmt );
 
-    m_GEngine = new VSPGraphic::GraphicEngine();
+    gEngine.getDisplay()->setDisplayLayout( 1, 1 );
+    gEngine.getDisplay()->selectViewport( 0 );
+    gEngine.getDisplay()->changeView( VSPGraphic::Common::VSP_CAM_FRONT );
 
-    // Link this GUI to one of drawObj screen.
-    m_LinkedScreen = drawObjScreen;
-
-    m_GEngine->getDisplay()->setDisplayLayout( 1, 1 );
-    m_GEngine->getDisplay()->selectViewport( 0 );
-    m_GEngine->getDisplay()->changeView( VSPGraphic::Common::VSP_CAM_FRONT );
-
-    Viewport * viewport = m_GEngine->getDisplay()->getViewport();
+    Viewport * viewport = gEngine.getDisplay()->getViewport();
     assert( viewport );
-    if( viewport )
-    {
-        // Disable border and arrows.
-        viewport->showBorders( false );
-        viewport->showXYZArrows( false );
+    // Disable border and arrows.
+    viewport->showBorders( false );
+    viewport->showXYZArrows( false );
 
-        // Enable grid.
-        viewport->showGridOverlay( true );
-    }
-
-    m_id = 0xFFFFFFFF;
-
-    m_Initialized = false;
-}
-VspSubGlWindow::~VspSubGlWindow()
-{
-    delete m_GEngine;
+    // Enable grid.
+    viewport->showGridOverlay( true );
 }
 
-void VspSubGlWindow::show()
+VspSubGlWindow::VspSubGlWindow( DrawObj::ScreenEnum drawObjScreen, QWidget * parent ) :
+    QGLWidget( parent ),
+    d_ptr( new VspSubGlWindowPrivate( this, drawObjScreen ) )
 {
-    Fl_Gl_Window::show();
-
-    // Initialize Glew when context is created.
-    _initGLEW();
+    setWindowTitle( "VSP Sub GL Window" );
 }
 
-void VspSubGlWindow::draw()
+VSPGraphic::GraphicEngine * VspSubGlWindow::getGraphicEngine()
 {
-    make_current();
-    if ( !valid() )
-    {
-        m_GEngine->getDisplay()->resize( w(), h() );
-    }
-    m_GEngine->draw();
+    return &d_func()->gEngine;
+}
+
+void VspSubGlWindow::initializeGL()
+{
+    d_func()->initGLEW();
+}
+
+void VspSubGlWindow::paintGL()
+{
+    makeCurrent();
+    d_func()->gEngine.draw();
+}
+
+void VspSubGlWindow::resizeGL( int w, int h )
+{
+    makeCurrent();
+    d_func()->gEngine.getDisplay()->resize( w, h );
 }
 
 void VspSubGlWindow::update()
 {
     Vehicle* vPtr = VehicleMgr.GetVehicle();
-
-    if ( vPtr )
+    if ( vPtr && isValid() )
     {
-        if( this->context_valid() )
-        {
-            _update( vPtr->GetDrawObjs() );
-        }
+        d_func()->update( vPtr->GetDrawObjs() );
     }
+    QGLWidget::update();
 }
 
-void VspSubGlWindow::_update( std::vector<DrawObj *> objects )
+void VspSubGlWindowPrivate::update( std::vector<DrawObj *> objects )
 {
     // Remove all Scene Objects.
     std::vector<unsigned int> currIds;
-    currIds = m_GEngine->getScene()->getIds();
+    currIds = scene()->getIds();
     for( int i = 0; i < ( int )currIds.size(); i++ )
     {
-        m_GEngine->getScene()->removeObject( currIds[i] );
+        scene()->removeObject( currIds[i] );
     }
 
     // Update Scene Objects.
     for( int i = 0; i < ( int )objects.size(); i++ )
     {
         // If this DrawObj is aimed for other screen, ignore.
-        if( objects[i]->m_Screen != m_LinkedScreen )
+        if( objects[i]->m_Screen != linkedScreen )
         {
             continue;
         }
@@ -108,7 +129,7 @@ void VspSubGlWindow::_update( std::vector<DrawObj *> objects )
         switch( objects[i]->m_Type )
         {
         case DrawObj::VSP_POINTS:
-            m_GEngine->getScene()->createObject( Common::VSP_OBJECT_MARKER, &id );
+            scene()->createObject( Common::VSP_OBJECT_MARKER, &id );
 
             // Update scene object.
             red = ( float )objects[i]->m_PointColor.x();
@@ -117,7 +138,7 @@ void VspSubGlWindow::_update( std::vector<DrawObj *> objects )
 
             size = ( float )objects[i]->m_PointSize;
 
-            rObj = dynamic_cast<Renderable*>( m_GEngine->getScene()->getObject(id) );
+            rObj = dynamic_cast<Renderable*>( scene()->getObject(id) );
             if( rObj )
             {
                 rObj->setVisibility( objects[i]->m_Visible );
@@ -125,12 +146,12 @@ void VspSubGlWindow::_update( std::vector<DrawObj *> objects )
                 rObj->setPointColor( red, green, blue );
                 rObj->setPointSize( size );
 
-                _loadPointData( rObj, objects[i] );
+                loadPointData( rObj, objects[i] );
             }
             break;
 
         case DrawObj::VSP_LINES:
-            m_GEngine->getScene()->createObject( Common::VSP_OBJECT_MARKER, &id );
+            scene()->createObject( Common::VSP_OBJECT_MARKER, &id );
 
             // Update scene object.
             red = ( float )objects[i]->m_LineColor.x();
@@ -139,7 +160,7 @@ void VspSubGlWindow::_update( std::vector<DrawObj *> objects )
 
             size = ( float )objects[i]->m_LineWidth;
 
-            rObj = dynamic_cast<Renderable*>( m_GEngine->getScene()->getObject( id ) );
+            rObj = dynamic_cast<Renderable*>( scene()->getObject( id ) );
             if( rObj )
             {
                 rObj->setVisibility( objects[i]->m_Visible );
@@ -147,7 +168,7 @@ void VspSubGlWindow::_update( std::vector<DrawObj *> objects )
                 rObj->setLineColor( red, green, blue );
                 rObj->setLineWidth( size );
 
-                _loadLineData( rObj, objects[i] );
+                loadLineData( rObj, objects[i] );
             }
             break;
 
@@ -159,25 +180,24 @@ void VspSubGlWindow::_update( std::vector<DrawObj *> objects )
 
 void VspSubGlWindow::setZoomValue( float value )
 {
-    Camera * camera = m_GEngine->getDisplay()->getCamera();
+    Camera * camera = d_func()->gEngine.getDisplay()->getCamera();
     if( camera )
     {
         camera->setZoomValue( value );
     }
 }
 
-void VspSubGlWindow::_initGLEW()
+void VspSubGlWindowPrivate::initGLEW()
 {
-    if( !m_Initialized )
+    if( !initialized )
     {
-        make_current();
+        /// \todo make_current()
         VSPGraphic::GraphicEngine::initGlew();
-
-        m_Initialized = true;
+        initialized = true;
     }
 }
 
-void VspSubGlWindow::_loadPointData( Renderable * destObj, DrawObj * drawObj )
+void VspSubGlWindowPrivate::loadPointData( Renderable * destObj, DrawObj * drawObj )
 {
     std::vector<float> vdata;
 
@@ -201,7 +221,7 @@ void VspSubGlWindow::_loadPointData( Renderable * destObj, DrawObj * drawObj )
     destObj->appendVBuffer( vdata.data(), sizeof( float ) * vdata.size() );
 }
 
-void VspSubGlWindow::_loadLineData( Renderable * destObj, DrawObj * drawObj )
+void VspSubGlWindowPrivate::loadLineData( Renderable * destObj, DrawObj * drawObj )
 {
     std::vector<float> vdata;
 
@@ -233,4 +253,7 @@ void VspSubGlWindow::_loadLineData( Renderable * destObj, DrawObj * drawObj )
     destObj->emptyVBuffer();
     destObj->appendVBuffer( vdata.data(), sizeof( float ) * vdata.size() );
 }
+
+VspSubGlWindow::~VspSubGlWindow() {}
+
 }

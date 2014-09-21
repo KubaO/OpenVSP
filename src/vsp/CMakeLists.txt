@@ -64,6 +64,7 @@ IF( NOT VSP_NO_GRAPHICS )
 		util
 		tritri
 		Qt5::Widgets
+		Qt5::OpenGL
         Angelscript
 		${CPPTEST_LIBRARIES}
 		${JPEG_LIBRARIES}
