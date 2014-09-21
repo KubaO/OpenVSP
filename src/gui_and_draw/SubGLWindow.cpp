@@ -75,8 +75,14 @@ VSPGraphic::GraphicEngine * VspSubGlWindow::getGraphicEngine()
     return &d_func()->gEngine;
 }
 
+QSize VspSubGlWindow::minimumSizeHint() const
+{
+    return QSize(10, 10);
+}
+
 void VspSubGlWindow::initializeGL()
 {
+    makeCurrent();
     d_func()->initGLEW();
 }
 
@@ -191,7 +197,6 @@ void VspSubGlWindowPrivate::initGLEW()
 {
     if( !initialized )
     {
-        /// \todo make_current()
         VSPGraphic::GraphicEngine::initGlew();
         initialized = true;
     }
