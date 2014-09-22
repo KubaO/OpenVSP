@@ -82,19 +82,16 @@ QSize VspSubGlWindow::minimumSizeHint() const
 
 void VspSubGlWindow::initializeGL()
 {
-    makeCurrent();
     d_func()->initGLEW();
 }
 
 void VspSubGlWindow::paintGL()
 {
-    makeCurrent();
     d_func()->gEngine.draw();
 }
 
 void VspSubGlWindow::resizeGL( int w, int h )
 {
-    makeCurrent();
     d_func()->gEngine.getDisplay()->resize( w, h );
 }
 
