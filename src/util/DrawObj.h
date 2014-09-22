@@ -16,8 +16,6 @@
 #include <vector>
 #include <string>
 
-using namespace std;
-
 #define PICKGEOMHEADER "GPICKING_"
 #define PICKVERTEXHEADER "VPICKING_"
 #define PICKLOCHEADER "LPICKING_"
@@ -27,83 +25,50 @@ using namespace std;
 class DrawObj
 {
 public:
-    /*
-    * Constructor.
-    */
     DrawObj();
-    /*
-    * Destructor.
-    */
     virtual ~DrawObj();
 
-    /*
-    * Render Type Enum.
-    *
-    * VSP_POINTS - Render to points.
-    * VSP_LINES - Render to lines.
-    * VSP_LINE_STRIP - Render to line strip. 
-    * VSP_LINE_LOOP - Render to line loop.
-    * VSP_WIRE_MESH - Render to wire frame.
-    * VSP_HIDDEN_MESH - Render to solid wire frame.
-    * VSP_SHADED_MESH - Render to mesh with lighting.
-    * VSP_TEXTURED_MESH - Render to texture mapped mesh with lighting.
-    * VSP_WIRE_TRIS - Render Triangles to wire frame.
-    * VSP_HIDDEN_TRIS - Render Triangles to solid wire frame.
-    * VSP_SHADED_TRIS - Render Triangles to mesh with lighting.
-    * VSP_SETTING - This drawObj provides Global Setting Info(lighting, etc...).  Does not render anything.
-    * VSP_RULER - Render Ruler.
-    * VSP_PICK_VERTEX - This type drawObj enables vertex picking for a specific geometry.
-    * VSP_PICK_VERTEX_SELECT_ALL - Same as VSP_PICK_VERTEX, but also select all vertices.
-    * VSP_PICK_VERTEX_UNSELECT_ALL - Send signal to clear all existing selections. Does not contain render information.
-    * VSP_PICK_VERTEX_HIDE_SELECTION - Send signal to hide all selections for this one update.  Does not contain render information.
-    * VSP_PICK_GEOM - This type drawObj enables geometry picking.
-    * VSP_PICK_LOCATION - This type drawObj enables location picking.
-    * VSP_CLIP - Add clipping plane.
-    */
-
-    vec3d ColorWheel( double angle ); // Returns rgb for an angle given in degrees
+    vec3d ColorWheel( double angle ); ///< Returns rgb for an angle given in degrees
+    /*! Render Type */
     enum TypeEnum
     {
-        VSP_POINTS,
-        VSP_LINES,
-        VSP_LINE_STRIP,
-        VSP_LINE_LOOP,
-        VSP_WIRE_MESH,
-        VSP_HIDDEN_MESH,
-        VSP_SHADED_MESH,
-        VSP_TEXTURED_MESH,
-        VSP_WIRE_TRIS,
-        VSP_HIDDEN_TRIS,
-        VSP_SHADED_TRIS,
+        VSP_POINTS, ///< Render to points.
+        VSP_LINES, ///< Render to lines.
+        VSP_LINE_STRIP, ///< Render to line strip.
+        VSP_LINE_LOOP, ///< Render to line loop.
+        VSP_WIRE_MESH, ///< Render to wire frame.
+        VSP_HIDDEN_MESH, ///< Render to solid wire frame.
+        VSP_SHADED_MESH, ///< Render to mesh with lighting.
+        VSP_TEXTURED_MESH, ///< Render to texture mapped mesh with lighting.
+        VSP_WIRE_TRIS, ///< Render Triangles to wire frame.
+        VSP_HIDDEN_TRIS, ///< Render Triangles to solid wire frame.
+        VSP_SHADED_TRIS, ///< Render Triangles to mesh with lighting.
         VSP_HIDDEN_TRIS_CFD,
-        VSP_SETTING,
-        VSP_RULER,
-        VSP_PICK_VERTEX,
-        VSP_PICK_VERTEX_SELECT_ALL,
-        VSP_PICK_VERTEX_UNSELECT_ALL,
-        VSP_PICK_VERTEX_HIDE_SELECTION,
-        VSP_PICK_GEOM,
-        VSP_PICK_LOCATION,
-        VSP_CLIP,
+        VSP_SETTING, ///< This drawObj provides Global Setting Info(lighting, etc...).  Does not render anything.
+        VSP_RULER, ///< Render Ruler.
+        VSP_PICK_VERTEX, ///< This drawObj enables vertex picking for a specific geometry.
+        VSP_PICK_VERTEX_SELECT_ALL, ///< Same as VSP_PICK_VERTEX, but also select all vertices.
+        VSP_PICK_VERTEX_UNSELECT_ALL, ///< Send signal to clear all existing selections. Does not contain render information.
+        VSP_PICK_VERTEX_HIDE_SELECTION, ///< Send signal to hide all selections for this one update.  Does not contain render information.
+        VSP_PICK_GEOM, ///< This drawObj enables geometry picking.
+        VSP_PICK_LOCATION, ///< This type drawObj enables location picking.
+        VSP_CLIP, ///< Add clipping plane.
     };
 
-    /*
-    * Target Screen Enum.
+    /*!
+    * \brief Target Screen
     * This is not Screen Type, each screen represent an actual screen
-    * in GUI.
-    *
-    * VSP_MAIN_SCREEN - Main VSP display window.
-    * VSP_XSEC_SCREEN - 2D display window in XSec Panel.
+    * in the GUI.
     */
     enum ScreenEnum
     {
-        VSP_MAIN_SCREEN,
-        VSP_XSEC_SCREEN,
-        VSP_TEX_PREVIEW,
+        VSP_MAIN_SCREEN, ///< Main VSP display window.
+        VSP_XSEC_SCREEN, ///< 2D display window in XSec Panel.
+        VSP_TEX_PREVIEW, ///< Texture preview window.
     };
 
-    /*
-    * Ruler step enum.
+    /*!
+    * \brief Ruler Step
     * A ruler requires three steps to complete.  On first
     * step, only start point is given.  Ruler is drawn
     * between start point and mouse location.  On second
@@ -119,64 +84,34 @@ public:
         VSP_RULER_STEP_COMPLETE,
     };
 
-    /*
-    * Ruler Information.
-    * Step - Current step of building a ruler.
-    * Start - Vertex Information of starting point.
-    * End - Vertex Information of ending point.
-    * Offset - placement of the ruler.
-    */
+    /*! \brief Ruler Information. */
     struct Ruler
     {
-        RulerEnum Step;
-        vec3d Start;
-        vec3d End;
-        vec3d Offset;
+        RulerEnum Step; ///< Current step of building a ruler.
+        vec3d Start; ///<  Vertex Information of starting point.
+        vec3d End; ///< Vertex Information of ending point.
+        vec3d Offset; ///< Placement of the ruler.
     };
 
-    /*
-    * Information needed to map a single texture.
-    *
-    * FileName - Texture File Path + File Name.
-    * ID - Texture ID, this ID is only unique to this drawObj.
-    *
-    * U - Texture's position on U direction.
-    * W - Texture's position on W direction.
-    *
-    * UScale - Texture's scale on U direction.
-    * WScale - Texture's scale on W direction.
-    *
-    * Transparency - Texture's Alpha value.
-    *
-    * UFlip - Flag for if U coordinate is flipped.
-    * WFlip - Flag for if W coordinate is flipped.
-    */
+    /*! \brief Information needed to map a single texture. */
     struct TextureInfo
     {
-        string FileName;
-        std::string ID;
+        std::string FileName; ///< Texture File Path + File Name.
+        std::string ID; ///< Texture ID, this ID is only unique to this drawObj.
 
-        float U;
-        float W;
+        float U; ///< Texture's position on U direction.
+        float W; ///< Texture's position on W direction.
 
-        float UScale;
-        float WScale;
+        float UScale; ///< Texture's scale on U direction.
+        float WScale; ///< Texture's scale on W direction.
 
-        float Transparency;
+        float Transparency; ///< Texture's Alpha value.
 
-        bool UFlip;
-        bool WFlip;
+        bool UFlip; ///< The U coordinate is flipped.
+        bool WFlip; ///< The W coordinate is flipped.
     };
 
-    /*
-    * Information needed to define a material.
-    *
-    * Ambient - Ambient value for this material.
-    * Diffuse - Diffuse value for this mateiral.
-    * Specular - Specular value for this material.
-    * Emission - Emission value for this material.
-    * Shininess - Shine value, the value is between 0 and 128.
-    */
+    /*! \brief Information needed to define a material. */
     struct MaterialInfo
     {
         float Ambient[4];
@@ -184,90 +119,79 @@ public:
         float Specular[4];
         float Emission[4];
 
-        float Shininess;
+        float Shininess; ///< Shine value, the value is between 0 and 128.
     };
 
-    /*
-    * Light Source Information.
-    *
-    * Active - True if Light Source is active.
-    *
-    * X - Light Source's position on X-axis.
-    * Y - Light Source's position on Y-axis.
-    * Z - Light Source's position on Z-axis.
-    *
-    * Amb - Ambient Light Value.
-    * Diff - Diffuse Light Value.
-    * Spec - Specular Light Value.
-    */
+    /*! \brief Light Source Information. */
     struct LightSourceInfo
     {
-        bool Active;
+        bool Active; ///< The light is active.
 
-        float X;
-        float Y;
-        float Z;
+        float X; ///< Light Source's position on X-axis.
+        float Y; ///< Light Source's position on Y-axis.
+        float Z; ///< Light Source's position on Z-axis.
 
-        float Amb;
-        float Diff;
-        float Spec;
+        float Amb; ///< Ambient Light Value.
+        float Diff; ///< Diffuse Light Value.
+        float Spec; ///< Specular Light Value.
     };
 
-    /*
-    * Unique Geom ID.
+    /*!
+    * \brief Unique Geometry ID.
     * Default ID = "Default".
     */
-    string m_GeomID;
+    std::string m_GeomID;
 
-    /*
+    /*!
     * If m_Type is a picking type, m_PickSourceID stores GeomID of 
     * the "Host Geometry".  
     * Picking DrawObjs do not store any data, its job is to set a target
     * geometry to become selectable. The target geometry is the host,
     * and its id goes here.
     */
-    string m_PickSourceID;
+    std::string m_PickSourceID;
 
-    /*
+    /*!
     * If m_Type is a picking type, m_FeedbackGroup identifies where the
     * picking feedback is going.  With this, we can have multiple picking
     * sessions active at the same time.
     */
-    string m_FeedbackGroup;
+    std::string m_FeedbackGroup;
 
-    /*
-    * Visibility of Geom.  
+    /*!
+    * \brief Visibility of Geom.
     * Geometry is visible on true and invisible on false.
     * Visibility is set to true by default.
     */
     bool m_Visible;
 
-    /*
-    * Geometry changed flag.  
+    /*!
+    * \brief Geometry changed flag.
     * This flag is used for optimization.  Flag true if geometry data are changed and require 
     * graphic buffer update.
     */
     bool m_GeomChanged;
 
-    /*
-    * Flip Normals flag.  If true, Normals need to flip to the opposite direction.
+    /*!
+    * \brief Flip Normals flag.
+    * If true, Normals need to flip to the opposite direction.
     */
     bool m_FlipNormals;
 
-    /*
-    * Desired Render type.
+    /*!
+    * \brief Desired Render type.
     * m_Type is set to VSP_POINTS by default.
     */
     TypeEnum m_Type;
 
-    /*
-    * Screen to display this drawObj.
+    /*!
+    * \brief Screen to display this drawObj.
     * m_Screen is set to VSP_MAIN_SCREEN by default.
     */
     ScreenEnum m_Screen;
 
-    /*
-    * Holds ruler information.
+    /*!
+    * \brief Holds ruler information.
     * A ruler requires three steps to complete.  On first
     * step, only start point is given.  Ruler is drawn
     * between start point and mouse location.  On second
@@ -277,43 +201,39 @@ public:
     */
     Ruler m_Ruler;
 
-    /*
-    * No Use for now.
-    */
+#if 0
+    /*! Unused. Default value: 0. */
     int m_Priority;
+#endif
 
-    /*
-    * Line thickness.
+    /*!
+    * \brief Line thickness.
     * LineWidth is set to 1.0 by default.
     */
     double m_LineWidth;
-    /*
-    * RGB Line Color.
+    /*!
+    * \brief RGB Line Color.
     * LineColor is set to blue(0, 0, 1) by default.
     */
     vec3d m_LineColor;
 
-    /*
-    * Point Size.
+    /*!
+    * \brief Point Size.
     * PointSize is set to 5.0 by default.
     */
     double m_PointSize;
-    /*
-    * RGB Point Color.
+    /*!
+    * \brief RGB Point Color.
     * PointColor is set to red(1, 0, 0) by default.
     */
     vec3d m_PointColor;
 
-    /*
-    * Text size for label.
-    */
+    /*! \brief Text size for label. */
     double m_TextSize;
-    /*
-    * RGB Text Color.
-    */
+    /*! \brief RGB Text Color. */
     vec3d m_TextColor;
 
-    /*
+    /*!
     * Array of vertex data.
     * m_PntVec is available if m_Type is one of the following:
     * VSP_POINTS, VSP_LINES, VSP_WIRE_TRIS, VSP_HIDDEN_TRIS,
@@ -325,8 +245,8 @@ public:
     * On VSP_WIRE_TRIS, VSP_HIDDEN_TRIS, and VSP_SHADED_TRIS,
     * data are stored as v0, v1, v2...
     */
-    vector< vec3d > m_PntVec;
-    /*
+    std::vector< vec3d > m_PntVec;
+    /*!
     * XSec data.
     * m_PntMesh is available if m_Type is one of the following:
     * VSP_WIRE_MESH, VSP_HIDDEN_MESH, VSP_SHADED_MESH, VSP_TEXTURED_MESH
@@ -334,8 +254,8 @@ public:
     * Data format:
     * m_PntMesh[pnts on xsec][xsec index]
     */
-    vector< vector< vec3d > > m_PntMesh;
-    /*
+    std::vector< std::vector< vec3d > > m_PntMesh;
+    /*!
     * XSec normals.
     * m_NormMesh is available if m_Type is one of the following:
     * VSP_WIRE_MESH, VSP_HIDDEN_MESH, VSP_SHADED_MESH, VSP_TEXTURED_MESH
@@ -343,31 +263,24 @@ public:
     * Data format:
     * m_NormMesh[pnts on xsec][xsec index]
     */ 
-    vector< vector< vec3d > > m_NormMesh;
-    vector< vec3d > m_NormVec; // For triangles
+    std::vector< std::vector< vec3d > > m_NormMesh;
+    std::vector< vec3d > m_NormVec; // For triangles
 
-    /*
-    * List of attached textures to this drawobj.  Default is empty.
-    */
-    vector<TextureInfo> m_TextureInfos;
+    /// List of attached textures to this drawobj.  Default is empty.
+    std::vector<TextureInfo> m_TextureInfos;
 
-    /*
+    /*!
     * List of Light Source Information.  Lighting is global, there will be
     * only one drawObj that has m_LightingInfos to avoid redundant processes.
     * Otherwise m_LightingInfos is empty.
     */
-    vector<LightSourceInfo> m_LightingInfos;
+    std::vector<LightSourceInfo> m_LightingInfos;
 
-    /*
-    * Material information of this DrawObj.
-    */
+    /*! Material information of this DrawObj. */
     MaterialInfo m_MaterialInfo;
 
-    vector< double > m_ClipLoc;
-    vector< bool > m_ClipFlag;
-
-protected:
-
+    std::vector< double > m_ClipLoc;
+    std::vector< bool > m_ClipFlag;
 };
 
 
