@@ -153,6 +153,9 @@ ManageTextureScreen::ManageTextureScreen( ScreenMgr * mgr ) :
 
 bool ManageTextureScreenPrivate::Update()
 {
+    // This method invokes graphics APIs that eventually modify the OpenGL context.
+    // Thus the GL window's context must be made current.
+    m_GlWin.makeCurrent();
     vector< Geom* > select_vec = veh()->GetActiveGeomPtrVec();
 
     if ( select_vec.size() != 1 )
