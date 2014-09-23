@@ -31,9 +31,9 @@ using namespace vsp;
 using std::vector;
 using std::string;
 
-class ManageGeomScreenPrivate : public QDialog, public VspScreenQtPrivate {
+class ManageGeomScreen::Private : public QDialog, public VspScreenQt::Private {
     Q_OBJECT
-    Q_DECLARE_PUBLIC( ManageGeomScreen )
+    VSP_DECLARE_PUBLIC( ManageGeomScreen )
     Q_PRIVATE_SLOT( self(), void SetUpdateFlag() )
 
     enum { POD_GEOM_SCREEN, FUSELAGE_GEOM_SCREEN, MS_WING_GEOM_SCREEN, BLANK_GEOM_SCREEN,
@@ -53,7 +53,7 @@ class ManageGeomScreenPrivate : public QDialog, public VspScreenQtPrivate {
 
     QWidget * widget() Q_DECL_OVERRIDE { return this; }
     bool Update() Q_DECL_OVERRIDE;
-    ManageGeomScreenPrivate( ManageGeomScreen * );
+    Private( ManageGeomScreen * );
 
     void ShowHideGeomScreens();
     void CreateScreens();
@@ -164,8 +164,8 @@ class ManageGeomScreenPrivate : public QDialog, public VspScreenQtPrivate {
 };
 VSP_DEFINE_PRIVATE( ManageGeomScreen )
 
-ManageGeomScreenPrivate::ManageGeomScreenPrivate( ManageGeomScreen * q ) :
-    VspScreenQtPrivate( q ),
+ManageGeomScreen::Private::Private( ManageGeomScreen * q ) :
+    VspScreenQt::Private( q ),
     LastTopLine( 0 ),
     SetIndex( 0 ),
     TypeIndex( 0 ),
@@ -182,7 +182,7 @@ ManageGeomScreenPrivate::ManageGeomScreenPrivate( ManageGeomScreen * q ) :
 }
 
 ManageGeomScreen::ManageGeomScreen( ScreenMgr* mgr ) :
-    VspScreenQt( *new ManageGeomScreenPrivate( this ), mgr )
+    VspScreenQt( *new ManageGeomScreen::Private( this ), mgr )
 {
     d_func()->CreateScreens();
 }
@@ -190,11 +190,11 @@ ManageGeomScreen::ManageGeomScreen( ScreenMgr* mgr ) :
 ManageGeomScreen::~ManageGeomScreen()
 {
     /// \todo We should use a smart container or a container of smart pointers.
-    Q_D( ManageGeomScreen );
+    V_D( ManageGeomScreen );
     qDeleteAll( d->GeomScreenVec.begin(), d->GeomScreenVec.end() );
 }
 
-bool ManageGeomScreenPrivate::Update()
+bool ManageGeomScreen::Private::Update()
 {
     if ( q_ptr->IsShown() )
     {
@@ -211,7 +211,7 @@ bool ManageGeomScreenPrivate::Update()
 }
 
 /// Update All Geom Screens
-void ManageGeomScreenPrivate::UpdateGeomScreens()
+void ManageGeomScreen::Private::UpdateGeomScreens()
 {
     foreach ( VspScreen* screen, GeomScreenVec )
     {
@@ -224,12 +224,12 @@ void ManageGeomScreenPrivate::UpdateGeomScreens()
 
 void ManageGeomScreen::Show()
 {
-    Q_D( ManageGeomScreen );
+    V_D( ManageGeomScreen );
     d->SetUpdateFlag();
     d->widget()->show();
 }
 
-void ManageGeomScreenPrivate::LoadBrowser()
+void ManageGeomScreen::Private::LoadBrowser()
 {
     //==== Save List of Selected Geoms ====//
     vector< string > activeVec = veh()->GetActiveGeomVec();
@@ -303,7 +303,7 @@ void ManageGeomScreenPrivate::LoadBrowser()
     }
 }
 
-void ManageGeomScreenPrivate::SelectGeomBrowser( string geom_id )
+void ManageGeomScreen::Private::SelectGeomBrowser( string geom_id )
 {
     //==== Select If Match ====//
     //==== Position Browser ====//
@@ -325,7 +325,7 @@ void ManageGeomScreenPrivate::SelectGeomBrowser( string geom_id )
 }
 
 /// Is Parent (or Higher) Selected?
-bool ManageGeomScreenPrivate::IsParentSelected( string geom_id, vector< string > & selVec )
+bool ManageGeomScreen::Private::IsParentSelected( string geom_id, vector< string > & selVec )
 {
     Geom* checkGeom = veh()->FindGeom( geom_id );
     while ( checkGeom )
@@ -341,7 +341,7 @@ bool ManageGeomScreenPrivate::IsParentSelected( string geom_id, vector< string >
     return false;
 }
 
-vector< string > ManageGeomScreenPrivate::GetSelectedBrowserItems()
+vector< string > ManageGeomScreen::Private::GetSelectedBrowserItems()
 {
     vector< string> selVec;
 
@@ -361,7 +361,7 @@ vector< string > ManageGeomScreenPrivate::GetSelectedBrowserItems()
     return selVec;
 }
 
-void ManageGeomScreenPrivate::LoadActiveGeomOutput()
+void ManageGeomScreen::Private::LoadActiveGeomOutput()
 {
     vector< string > activeVec = veh()->GetActiveGeomVec();
     if ( activeVec.empty() )
@@ -382,7 +382,7 @@ void ManageGeomScreenPrivate::LoadActiveGeomOutput()
     }
 }
 
-void ManageGeomScreenPrivate::LoadTypeChoice()
+void ManageGeomScreen::Private::LoadTypeChoice()
 {
     Ui.geomTypeChoice->clear();
 
@@ -412,7 +412,7 @@ void ManageGeomScreenPrivate::LoadTypeChoice()
 }
 
 /// Add Geom - Type From Type Choice
-void ManageGeomScreenPrivate::AddGeom()
+void ManageGeomScreen::Private::AddGeom()
 {
     GeomType type = veh()->GetGeomType( TypeIndex );
 
@@ -425,7 +425,7 @@ void ManageGeomScreenPrivate::AddGeom()
 }
 
 /// Item in Geom Browser Was Selected
-void ManageGeomScreenPrivate::on_geomBrowser_itemSelectionChanged()
+void ManageGeomScreen::Private::on_geomBrowser_itemSelectionChanged()
 {
     vector< string > selVec = GetSelectedBrowserItems();
     veh()->SetActiveGeomVec( selVec );
@@ -438,7 +438,7 @@ void ManageGeomScreenPrivate::on_geomBrowser_itemSelectionChanged()
 //  aircraftPtr->triggerDraw();
 }
 
-void ManageGeomScreenPrivate::on_geomBrowser_itemClicked( QListWidgetItem* )
+void ManageGeomScreen::Private::on_geomBrowser_itemClicked( QListWidgetItem* )
 {
     vector< string > selVec = GetSelectedBrowserItems();
 
@@ -491,7 +491,7 @@ void ManageGeomScreenPrivate::on_geomBrowser_itemClicked( QListWidgetItem* )
 
 
 //==== Show/NoShow Active Geoms and Children ====//
-void ManageGeomScreenPrivate::NoShowActiveGeoms( bool flag )
+void ManageGeomScreen::Private::NoShowActiveGeoms( bool flag )
 {
 
     //==== Load Active Geom IDs And Children ====//
@@ -520,7 +520,7 @@ void ManageGeomScreenPrivate::NoShowActiveGeoms( bool flag )
 }
 
 /// Select All Geoms
-void ManageGeomScreenPrivate::SelectAll()
+void ManageGeomScreen::Private::SelectAll()
 {
     vector< string > const all_geom_vec = veh()->GetGeomVec();
     veh()->SetActiveGeomVec( all_geom_vec );
@@ -538,7 +538,7 @@ void ManageGeomScreenPrivate::SelectAll()
 }
 
 /// Load Active Geom IDs and Children
-vector< string > ManageGeomScreenPrivate::GetActiveGeoms()
+vector< string > ManageGeomScreen::Private::GetActiveGeoms()
 {
     //==== Load Active Geom IDs And Children ====//
     vector<string> geom_id_vec;
@@ -562,7 +562,7 @@ vector< string > ManageGeomScreenPrivate::GetActiveGeoms()
     return geom_id_vec;
 }
 
-void ManageGeomScreenPrivate::SetGeomDisplayType( int type )
+void ManageGeomScreen::Private::SetGeomDisplayType( int type )
 {
     vector<string> geom_id_vec = GetActiveGeoms();
     //==== Set Display Type ====//
@@ -576,7 +576,7 @@ void ManageGeomScreenPrivate::SetGeomDisplayType( int type )
 //  aircraftPtr->triggerDraw();
 }
 
-void ManageGeomScreenPrivate::EditName( string name )
+void ManageGeomScreen::Private::EditName( string name )
 {
     vector<string> active_geom_vec = veh()->GetActiveGeomVec();
 
@@ -603,7 +603,7 @@ void ManageGeomScreenPrivate::EditName( string name )
 }
 
 
-//void ManageGeomScreenPrivate::s_select_none(int src) {
+//void ManageGeomScreen::Private::s_select_none(int src) {
 //  aircraftPtr->setActiveGeom(NULL);
 //
 //  if (src != ScriptMgr::SCRIPT)
@@ -619,7 +619,7 @@ void ManageGeomScreenPrivate::EditName( string name )
 //  if (src == ScriptMgr::GUI) scriptMgr->addLine("select none");
 //}
 
-void ManageGeomScreenPrivate::CreateScreens()
+void ManageGeomScreen::Private::CreateScreens()
 {
     GeomScreenVec.resize( NUM_GEOM_SCREENS );
     GeomScreenVec[POD_GEOM_SCREEN] = new PodScreen( GetScreenMgr() );
@@ -637,7 +637,7 @@ void ManageGeomScreenPrivate::CreateScreens()
 }
 
 /// Show Hide Geom Screen Depending on Active Geoms
-void ManageGeomScreenPrivate::ShowHideGeomScreens()
+void ManageGeomScreen::Private::ShowHideGeomScreens()
 {
     // Hide All Geom Screens
     // Show Screen - Each Screen Will Test Check Valid Active Geom Type
@@ -649,7 +649,7 @@ void ManageGeomScreenPrivate::ShowHideGeomScreens()
 }
 
 /// Show or Hide Subsurface Lines
-void ManageGeomScreenPrivate::SetSubDrawFlag( bool f )
+void ManageGeomScreen::Private::SetSubDrawFlag( bool f )
 {
     vector<string> geom_id_vec = GetActiveGeoms();
     vector< Geom* > geom_vec = veh()->FindGeomVec( geom_id_vec );
@@ -661,7 +661,7 @@ void ManageGeomScreenPrivate::SetSubDrawFlag( bool f )
 }
 
 /// Show or Hide Feature Lines
-void ManageGeomScreenPrivate::SetFeatureDrawFlag( bool f )
+void ManageGeomScreen::Private::SetFeatureDrawFlag( bool f )
 {
     vector<string> geom_id_vec = GetActiveGeoms();
     vector< Geom* > geom_vec = veh()->FindGeomVec( geom_id_vec );
@@ -679,7 +679,7 @@ std::string ManageGeomScreen::getFeedbackGroupName()
 
 void ManageGeomScreen::Set( std::string geomId )
 {
-    Q_D( ManageGeomScreen );
+    V_D( ManageGeomScreen );
     d->veh()->SetActiveGeom(geomId);
 
     d->ShowHideGeomScreens();
@@ -693,7 +693,7 @@ void ManageGeomScreen::TriggerPickSwitch()
 
 void ManageGeomScreen::LoadDrawObjs( vector< DrawObj* > & draw_obj_vec )
 {
-    Q_D( ManageGeomScreen );
+    V_D( ManageGeomScreen );
     d->UpdateDrawObjs();
 
     for( int i = 0; i < ( int )d->PickList.size(); i++ )
@@ -702,7 +702,7 @@ void ManageGeomScreen::LoadDrawObjs( vector< DrawObj* > & draw_obj_vec )
     }
 }
 
-void ManageGeomScreenPrivate::UpdateDrawObjs()
+void ManageGeomScreen::Private::UpdateDrawObjs()
 {
     PickList.clear();
     if ( !Ui.pickGeomButton->isChecked() ) return;
@@ -733,7 +733,7 @@ void ManageGeomScreenPrivate::UpdateDrawObjs()
     }
 }
 
-void ManageGeomScreenPrivate::UpdateDrawType()
+void ManageGeomScreen::Private::UpdateDrawType()
 {
     vector<string> geom_id_vec = GetActiveGeoms();
     vector< Geom* > geom_vec = veh()->FindGeomVec( geom_id_vec );

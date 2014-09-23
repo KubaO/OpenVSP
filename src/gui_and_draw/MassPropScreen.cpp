@@ -12,15 +12,15 @@
 #include "VspScreenQt_p.h"
 #include "ui_MassPropScreen.h"
 
-class MassPropScreenPrivate : public QDialog, public VspScreenQtPrivate {
+class MassPropScreen::Private : public QDialog, public VspScreenQt::Private {
     Q_OBJECT
-    Q_DECLARE_PUBLIC( MassPropScreen )
+    VSP_DECLARE_PUBLIC( MassPropScreen )
     Q_PRIVATE_SLOT( self(), void SetUpdateFlag() )
     Ui::MassPropScreen Ui;
     int NumMassSlices;
     QWidget * widget() Q_DECL_OVERRIDE { return this; }
     bool Update() Q_DECL_OVERRIDE;
-    MassPropScreenPrivate( MassPropScreen * );
+    Private( MassPropScreen * );
 
     Q_SLOT void on_computeButton_clicked()
     {
@@ -41,8 +41,8 @@ class MassPropScreenPrivate : public QDialog, public VspScreenQtPrivate {
     }
 };
 
-MassPropScreenPrivate::MassPropScreenPrivate( MassPropScreen * q ) :
-    VspScreenQtPrivate( q )
+MassPropScreen::Private::Private( MassPropScreen * q ) :
+    VspScreenQt::Private( q )
 {
     Ui.setupUi( this );
     Ui.numSlicesSlider->setRange( 10, 200 );
@@ -52,12 +52,12 @@ MassPropScreenPrivate::MassPropScreenPrivate( MassPropScreen * q ) :
 }
 
 MassPropScreen::MassPropScreen( ScreenMgr *mgr ) :
-    VspScreenQt( *new MassPropScreenPrivate( this ), mgr )
+    VspScreenQt( *new MassPropScreen::Private( this ), mgr )
 {
 }
 
 
-bool MassPropScreenPrivate::Update()
+bool MassPropScreen::Private::Update()
 {
     LoadSetChoice( Ui.setChoice, KeepIndex );
     Vehicle* const vehiclePtr = veh();

@@ -10,6 +10,7 @@
 
 #include "VspScreenQt.h"
 #include "GuiDevice.h"
+#include "VspObj.h"
 #include <QObject>
 
 class QWidget;
@@ -17,12 +18,11 @@ class QAbstractButton;
 class AbstractDoubleSlider;
 class QDoubleSpinBox;
 
-class GuiDeviceQtPrivate;
 class GuiDeviceQt : public GuiDevice
 {
-    Q_DECLARE_PRIVATE( GuiDeviceQt )
+    VSP_DECLARE_PRIVATE( GuiDeviceQt )
 protected:
-    QScopedPointer<GuiDeviceQtPrivate> const d_ptr;
+    QScopedPointer< Private > const d_ptr;
 public:
     void Init( VspScreenQt* screen );
     void Activate() Q_DECL_OVERRIDE;
@@ -37,7 +37,7 @@ public:
     ~GuiDeviceQt();
 
 protected:
-    GuiDeviceQt( GuiDeviceQtPrivate & );
+    GuiDeviceQt( Private & );
 
     //==== First Widget Is Assumed Resizable For Set Width =====//
     virtual void AddWidget( QWidget* w, bool resizable_flag = false );
@@ -47,7 +47,6 @@ protected:
     void SetValAndLimits( Parm* ) Q_DECL_OVERRIDE {}
 };
 
-class ToggleButtonPrivate;
 /// Toggle type button with light. Linked to a (BoolParm).
 class ToggleButton : public GuiDeviceQt
 {
@@ -61,7 +60,6 @@ protected:
     void SetValAndLimits( Parm* p ) Q_DECL_OVERRIDE;
 };
 
-class SliderPrivate;
 /// A linear slider. Linked to a (Parm/IntParm).
 class Slider : public GuiDeviceQt
 {
@@ -72,11 +70,10 @@ public:
     void SetRange( double range );
     ~Slider();
 protected:
-    Slider( SliderPrivate & );
+    Slider( Private & );
     void SetValAndLimits( Parm* p ) Q_DECL_OVERRIDE;
 };
 
-class LogSliderPrivate;
 /// A log10 slider. Linked to a (Parm/IntParm).
 class LogSlider : public Slider
 {
@@ -88,7 +85,6 @@ protected:
     void SetValAndLimits( Parm* p ) Q_DECL_OVERRIDE;
 };
 
-class InputPrivate;
 class Input : public GuiDeviceQt
 {
     VSP_DECLARE_PRIVATE( Input )
@@ -102,7 +98,6 @@ protected:
     void SetValAndLimits( Parm* p ) Q_DECL_OVERRIDE;
 };
 
-class ParmButtonPrivate;
 /// A button with a label. Linked to a (Parm).
 class ParmButton : public GuiDeviceQt
 {
@@ -117,7 +112,6 @@ protected:
     void SetValAndLimits( Parm* p ) Q_DECL_OVERRIDE;
 };
 
-class SliderInputPrivate;
 /// Combo of a Slider (or LogSlider) and Input and optional Parm Button. Linked to a (Parm).
 class SliderInput : public GuiDeviceQt
 {
@@ -137,7 +131,6 @@ protected:
 };
 
 
-class StringInputPrivate;
 class StringInput : public GuiDeviceQt
 {
     VSP_DECLARE_PRIVATE( StringInput )
@@ -148,7 +141,6 @@ public:
 };
 
 
-class ColorPickerPrivate;
 class ColorPicker : public GuiDeviceQt
 {
     VSP_DECLARE_PRIVATE( ColorPicker )
@@ -160,7 +152,6 @@ public:
 };
 
 
-class TriggerButtonPrivate;
 class TriggerButton : public GuiDeviceQt
 {
     VSP_DECLARE_PRIVATE( TriggerButton )
@@ -169,7 +160,6 @@ public:
 };
 
 
-class ChoicePrivate;
 class Choice : public GuiDeviceQt
 {
     VSP_DECLARE_PRIVATE( Choice )
@@ -186,7 +176,6 @@ public:
 };
 
 
-class CounterPrivate;
 class Counter : public GuiDeviceQt
 {
     VSP_DECLARE_PRIVATE( Counter )
@@ -195,7 +184,6 @@ public:
 };
 
 
-class SliderAdjRangeInputPrivate;
 class SliderAdjRangeInput : public GuiDeviceQt
 {
     VSP_DECLARE_PRIVATE( SliderAdjRangeInput )
@@ -204,7 +192,6 @@ public:
 };
 
 
-class SliderAdjRange2InputPrivate;
 class SliderAdjRange2Input : public GuiDeviceQt
 {
     VSP_DECLARE_PRIVATE( SliderAdjRange2Input )
@@ -215,7 +202,6 @@ public:
 };
 
 
-class ToggleRadioGroupPrivate;
 class ToggleRadioGroup : public GuiDeviceQt
 {
     VSP_DECLARE_PRIVATE( ToggleRadioGroup )
@@ -226,7 +212,6 @@ public:
 };
 
 
-class CheckButtonBitPrivate;
 class CheckButtonBit : public GuiDeviceQt
 {
     VSP_DECLARE_PRIVATE( CheckButtonBit )
@@ -235,7 +220,6 @@ public:
 };
 
 
-class IndexSelectorPrivate;
 class IndexSelector : public GuiDeviceQt
 {
     VSP_DECLARE_PRIVATE( IndexSelector )

@@ -16,7 +16,6 @@
 
 class Parm;
 class DrawObj;
-class CfdMeshScreenPrivate;
 class CfdMeshScreen : public VspScreenQt
 {
     VSP_DECLARE_PRIVATE( CfdMeshScreen )

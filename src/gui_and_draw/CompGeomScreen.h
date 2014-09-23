@@ -10,7 +10,6 @@
 
 #include "VspScreenQt.h"
 
-class CompGeomScreenPrivate;
 class CompGeomScreen : public VspScreenQt
 {
     VSP_DECLARE_PRIVATE( CompGeomScreen )

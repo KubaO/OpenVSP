@@ -14,15 +14,15 @@
 
 using namespace vsp;
 
-class ExportScreenPrivate: public QDialog, public VspScreenQtPrivate
+class ExportScreen::Private: public QDialog, public VspScreenQt::Private
 {
     Q_OBJECT
-    Q_DECLARE_PUBLIC( ExportScreen )
+    VSP_DECLARE_PUBLIC( ExportScreen )
     Ui::ExportScreen Ui;
 
     QWidget * widget() Q_DECL_OVERRIDE { return this; }
     bool Update() Q_DECL_OVERRIDE;
-    ExportScreenPrivate( ExportScreen * );
+    Private( ExportScreen * );
 
     void ExportFile( int type ) {
         q_func()->ExportFile( Ui.setChoice->currentIndex(), type );
@@ -66,18 +66,18 @@ class ExportScreenPrivate: public QDialog, public VspScreenQtPrivate
 };
 VSP_DEFINE_PRIVATE( ExportScreen )
 
-ExportScreenPrivate::ExportScreenPrivate( ExportScreen * q ) :
-    VspScreenQtPrivate( q )
+ExportScreen::Private::Private( ExportScreen * q ) :
+    VspScreenQt::Private( q )
 {
     Ui.setupUi( this );
     EnableUpdateFlags();
 }
 
 ExportScreen::ExportScreen( ScreenMgr* mgr ) :
-    VspScreenQt( *new ExportScreenPrivate( this ), mgr )
+    VspScreenQt( *new ExportScreen::Private( this ), mgr )
 {}
 
-bool ExportScreenPrivate::Update()
+bool ExportScreen::Private::Update()
 {
     LoadSetChoice( Ui.setChoice, KeepIndex );
     return true;
@@ -85,7 +85,7 @@ bool ExportScreenPrivate::Update()
 
 std::string ExportScreen::ExportFile( int write_set, int type )
 {
-    Q_D( ExportScreen );
+    V_D( ExportScreen );
     std::string newfile;
     switch ( type ) {
     case EXPORT_XSEC:

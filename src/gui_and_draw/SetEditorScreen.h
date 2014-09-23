@@ -12,7 +12,6 @@
 
 #include "VspScreenQt.h"
 
-class SetEditorScreenPrivate;
 class SetEditorScreen : public VspScreenQt
 {
     VSP_DECLARE_PRIVATE( SetEditorScreen )

@@ -10,15 +10,15 @@
 #ifndef SELECTFILESCREEN__INCLUDED_
 #define SELECTFILESCREEN__INCLUDED_
 
+#include "VspObj.h"
 #include <QScopedPointer>
 #include <string>
 
-class SelectFileScreenPrivate;
 class SelectFileScreen
 {
-    Q_DISABLE_COPY(SelectFileScreen)
-    Q_DECLARE_PRIVATE(SelectFileScreen)
-    QScopedPointer<SelectFileScreenPrivate> const d_ptr;
+    Q_DISABLE_COPY( SelectFileScreen )
+    VSP_DECLARE_PRIVATE( SelectFileScreen )
+    QScopedPointer<Private> const d_ptr;
 public:
     SelectFileScreen();
     virtual ~SelectFileScreen();

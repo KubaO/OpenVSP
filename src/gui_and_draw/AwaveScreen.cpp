@@ -15,10 +15,10 @@
 #include "ui_AwaveScreen.h"
 #include <cmath>
 
-class AwaveScreenPrivate : public QDialog, public VspScreenQtPrivate
+class AwaveScreen::Private : public QDialog, public VspScreenQt::Private
 {
     Q_OBJECT
-    Q_DECLARE_PUBLIC( AwaveScreen )
+    VSP_DECLARE_PUBLIC( AwaveScreen )
     Q_PRIVATE_SLOT( self(), void SetUpdateFlag() )
     Ui::AwaveScreen Ui;
     int SelectedSetIndex; /// \todo SelectedSetIndex is redundant, see e.g. CompGeomScreen
@@ -41,7 +41,7 @@ class AwaveScreenPrivate : public QDialog, public VspScreenQtPrivate
     bool Update() Q_DECL_OVERRIDE;
     enum Delta { StartChanged, EndChanged };
     void check( Delta );
-    AwaveScreenPrivate( AwaveScreen * q);
+    Private( AwaveScreen * q);
 
     Q_SLOT void on_numSlicesSlider_valueChanged( int val )
     {
@@ -117,8 +117,8 @@ class AwaveScreenPrivate : public QDialog, public VspScreenQtPrivate
 };
 VSP_DEFINE_PRIVATE( AwaveScreen )
 
-AwaveScreenPrivate::AwaveScreenPrivate( AwaveScreen * q) :
-    VspScreenQtPrivate( q )
+AwaveScreen::Private::Private( AwaveScreen * q) :
+    VspScreenQt::Private( q )
 {
     Ui.setupUi( this );
     /// \todo Use the bounding box to determine slicing limits
@@ -155,7 +155,7 @@ AwaveScreenPrivate::AwaveScreenPrivate( AwaveScreen * q) :
 }
 
 AwaveScreen::AwaveScreen( ScreenMgr *mgr ) :
-    VspScreenQt( *new AwaveScreenPrivate( this ), mgr )
+    VspScreenQt( *new AwaveScreen::Private( this ), mgr )
 {
 }
 
@@ -163,7 +163,7 @@ AwaveScreen::~AwaveScreen()
 {
 }
 
-bool AwaveScreenPrivate::Update()
+bool AwaveScreen::Private::Update()
 {
     int const decimals = 3; // %6.3f
     Vehicle* veh = this->veh();
@@ -278,7 +278,7 @@ bool AwaveScreenPrivate::Update()
     return true;
 }
 
-void AwaveScreenPrivate::on_startButton_clicked()
+void AwaveScreen::Private::on_startButton_clicked()
 {
     double AngleControlVal = ComputeAngle ? MNumber : Angle;
 
@@ -294,7 +294,7 @@ void AwaveScreenPrivate::on_startButton_clicked()
 }
 
 /// Check to make sure start is less than end
-void AwaveScreenPrivate::check( AwaveScreenPrivate::Delta delta )
+void AwaveScreen::Private::check( AwaveScreen::Private::Delta delta )
 {
     if ( StartVal > EndVal )
     {

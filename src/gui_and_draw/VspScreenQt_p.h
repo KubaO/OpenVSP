@@ -16,19 +16,19 @@ class Vehicle;
 class ScreenMgr;
 class QWidget;
 class QComboBox;
-class VspScreenQtPrivate {
-    Q_DISABLE_COPY( VspScreenQtPrivate )
-    Q_DECLARE_PUBLIC( VspScreenQt )
+class VspScreenQt::Private {
+    Q_DISABLE_COPY( Private )
+    VSP_DECLARE_PUBLIC( VspScreenQt )
     bool blockSignalsInNextUpdate;
     bool blockSignalsInUpdates;
     bool inUpdate;
     bool enableUpdateFlags;
     QScopedValueRollback<bool> * updateFlagRollback;
 public:
-    VspScreenQtPrivate( VspScreenQt * q );
-    virtual ~VspScreenQtPrivate();
+    Private( VspScreenQt * q );
+    virtual ~Private();
     virtual QWidget * widget() = 0;
-    VspScreenQtPrivate * self() { return this; }
+    Private * self() { return this; }
     Vehicle* veh();
     virtual bool Update() = 0;
     ScreenMgr * GetScreenMgr();

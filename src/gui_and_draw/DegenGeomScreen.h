@@ -10,7 +10,6 @@
 
 #include "VspScreenQt.h"
 
-class DegenGeomScreenPrivate;
 class DegenGeomScreen : public VspScreenQt
 {
     VSP_DECLARE_PRIVATE( DegenGeomScreen )

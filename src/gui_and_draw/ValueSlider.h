@@ -9,20 +9,20 @@
 #define VALUESLIDER_H
 
 #include "AbstractDoubleSlider.h"
+#include "VspObj.h"
 #include <QAbstractSpinBox>
 
-class ValueSliderPrivate;
 class ValueSlider : public AbstractDoubleSlider
 {
     Q_OBJECT
-    Q_DECLARE_PRIVATE( ValueSlider )
+    VSP_DECLARE_PRIVATE( ValueSlider )
     Q_PROPERTY( Qt::Orientation orientation READ orientation WRITE setOrientation )
     Q_PROPERTY( int decimals READ decimals WRITE setDecimals )
     Q_PROPERTY( QAbstractSpinBox::ButtonSymbols buttonSymbols READ buttonSymbols WRITE setButtonSymbols )
     Q_PROPERTY( QColor colorization READ colorization WRITE setColorization )
     Q_PRIVATE_SLOT( d_func(), void on_qt_slider_valueChanged( double ) )
     Q_PRIVATE_SLOT( d_func(), void on_qt_spinbox_valueChanged( double ) )
-    QScopedPointer<ValueSliderPrivate> const d_ptr;
+    QScopedPointer< Private > const d_ptr;
 public:
     explicit ValueSlider(QWidget *parent = 0);
     ~ValueSlider();

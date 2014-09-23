@@ -15,15 +15,15 @@
 #include "VspScreenQt_p.h"
 #include "ui_CompGeomScreen.h"
 
-class CompGeomScreenPrivate : public QDialog, public VspScreenQtPrivate {
+class CompGeomScreen::Private : public QDialog, public VspScreenQt::Private {
     Q_OBJECT
-    Q_DECLARE_PUBLIC( CompGeomScreen )
+    VSP_DECLARE_PUBLIC( CompGeomScreen )
     Q_PRIVATE_SLOT( self(), void SetUpdateFlag() )
     Ui::CompGeomScreen Ui;
 
     QWidget * widget() Q_DECL_OVERRIDE { return this; }
     bool Update() Q_DECL_OVERRIDE;
-    CompGeomScreenPrivate( CompGeomScreen * );
+    Private( CompGeomScreen * );
 
     Q_SLOT void on_csvFileButton_toggled( bool val )
     {
@@ -62,8 +62,8 @@ class CompGeomScreenPrivate : public QDialog, public VspScreenQtPrivate {
 };
 VSP_DEFINE_PRIVATE( CompGeomScreen )
 
-CompGeomScreenPrivate::CompGeomScreenPrivate( CompGeomScreen * q ) :
-    VspScreenQtPrivate( q )
+CompGeomScreen::Private::Private( CompGeomScreen * q ) :
+    VspScreenQt::Private( q )
 {
     Ui.setupUi( this );
     Ui.halfMeshButton->setChecked( true );
@@ -73,11 +73,11 @@ CompGeomScreenPrivate::CompGeomScreenPrivate( CompGeomScreen * q ) :
 }
 
 CompGeomScreen::CompGeomScreen( ScreenMgr* mgr ) :
-    VspScreenQt( *new CompGeomScreenPrivate( this ), mgr )
+    VspScreenQt( *new CompGeomScreen::Private( this ), mgr )
 {
 }
 
-bool CompGeomScreenPrivate::Update()
+bool CompGeomScreen::Private::Update()
 {
     Vehicle* const veh = this->veh();
     LoadSetChoice( Ui.setChoice, KeepIndex );

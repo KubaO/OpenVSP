@@ -22,10 +22,10 @@ using std::string;
 
 static Link * CurrLink() { return LinkMgr.GetCurrLink(); }
 
-class ParmLinkScreenPrivate : public QDialog, public VspScreenQtPrivate
+class ParmLinkScreen::Private : public QDialog, public VspScreenQt::Private
 {
     Q_OBJECT
-    Q_DECLARE_PUBLIC( ParmLinkScreen )
+    VSP_DECLARE_PUBLIC( ParmLinkScreen )
     Q_PRIVATE_SLOT( self(), void SetUpdateFlag() )
     Ui::ParmLinkScreen Ui;
 
@@ -45,7 +45,7 @@ class ParmLinkScreenPrivate : public QDialog, public VspScreenQtPrivate
 
     QWidget * widget() Q_DECL_OVERRIDE { return this; }
     bool Update() Q_DECL_OVERRIDE;
-    ParmLinkScreenPrivate( ParmLinkScreen * );
+    Private( ParmLinkScreen * );
 
     Q_SLOT void on_compAChoice_currentIndexChanged()
     {
@@ -147,8 +147,8 @@ class ParmLinkScreenPrivate : public QDialog, public VspScreenQtPrivate
 };
 VSP_DEFINE_PRIVATE( ParmLinkScreen )
 
-ParmLinkScreenPrivate::ParmLinkScreenPrivate( ParmLinkScreen * q ) :
-    VspScreenQtPrivate( q )
+ParmLinkScreen::Private::Private( ParmLinkScreen * q ) :
+    VspScreenQt::Private( q )
 {
     Ui.setupUi( this );
 
@@ -181,13 +181,13 @@ ParmLinkScreenPrivate::ParmLinkScreenPrivate( ParmLinkScreen * q ) :
 }
 
 ParmLinkScreen::ParmLinkScreen( ScreenMgr* mgr ) :
-    VspScreenQt( *new ParmLinkScreenPrivate( this ), mgr )
+    VspScreenQt( *new ParmLinkScreen::Private( this ), mgr )
 {
 }
 
 void ParmLinkScreen::Show()
 {
-    Q_D( ParmLinkScreen );
+    V_D( ParmLinkScreen );
     //Show( aircraftPtr->getUserGeom() );
     d->SetUpdateFlag();
     d->show();
@@ -196,7 +196,7 @@ void ParmLinkScreen::Show()
 #if 0
 void ParmLinkScreen::Show( Geom* geomPtr )
 {
-    Q_D( ParmLinkScreen )
+    V_D( ParmLinkScreen )
     //==== Check For Duplicate Comp Names ====//
 
     UserGeom* currGeom = (UserGeom*)geomPtr;
@@ -236,7 +236,7 @@ void ParmLinkScreen::Show( Geom* geomPtr )
 #if 0
 void ParmLinkScreen::RemoveAllRefs( GeomBase* gPtr )
 {
-    Q_D( ParmLinkScreen );
+    V_D( ParmLinkScreen );
     vector< ParmButton* > tempVec;
 
     for ( int i = 0 ; i < (int)d->ParmButtonVec.size() ; i++ )
@@ -256,7 +256,7 @@ static QTableWidgetItem * textItem( const char * text )
     return item;
 }
 
-bool ParmLinkScreenPrivate::Update()
+bool ParmLinkScreen::Private::Update()
 {
     const char rArrow[] = "\xe2\x9e\x9e";
     bool flag;
@@ -407,7 +407,7 @@ bool ParmLinkScreenPrivate::Update()
 #if 0
 void ParmLinkScreen::ClearButtonParms()
 {
-    Q_D( ParmLinkScreen );
+    V_D( ParmLinkScreen );
     for ( int i = 0 ; i < (int)d->ParmButtonVec.size() ; i++ )
     {
         d->ParmButtonVec[i]->set_parm_ptr( 0 );
@@ -419,7 +419,7 @@ void ParmLinkScreen::ClearButtonParms()
 #if 0
 void ParmLinkScreen::SetTitle( const char* name )
 {
-    Q_D( ParmLinkScreen );
+    V_D( ParmLinkScreen );
     QString title = "PARMLINK : ";
     title.concatenate( name );
     d->Ui.screenHeader->setText( title );
@@ -428,7 +428,7 @@ void ParmLinkScreen::SetTitle( const char* name )
 
 void ParmLinkScreen::CompGroupLinkChange()
 {
-    Q_D( ParmLinkScreen );
+    V_D( ParmLinkScreen );
     UiSignalBlocker blocker( d );
     LinkMgr.SetCurrLinkIndex( -1 );
 
@@ -447,7 +447,7 @@ void ParmLinkScreen::CompGroupLinkChange()
 }
 
 
-vector< string > ParmLinkScreenPrivate::FindParmNames( bool A_flag, vector< string > & parm_id_vec )
+vector< string > ParmLinkScreen::Private::FindParmNames( bool A_flag, vector< string > & parm_id_vec )
 {
     vector< string > name_vec;
     for ( int i = 0 ; i < ( int )parm_id_vec.size() ; i++ )

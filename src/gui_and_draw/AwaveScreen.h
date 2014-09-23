@@ -12,7 +12,6 @@
 
 #include "VspScreenQt.h"
 
-class AwaveScreenPrivate;
 class AwaveScreen : public VspScreenQt
 {
     VSP_DECLARE_PRIVATE( AwaveScreen )

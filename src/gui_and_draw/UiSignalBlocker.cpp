@@ -10,20 +10,21 @@
 #include <QPointer>
 #include <QList>
 
-class UiSignalBlockerPrivate {
+class UiSignalBlocker::Private {
 public:
     QList< QPointer<QWidget> > blocked;
 };
+VSP_DEFINE_PRIVATE( UiSignalBlocker )
 
 UiSignalBlocker::UiSignalBlocker( QWidget * b ) :
-    d_ptr( new UiSignalBlockerPrivate )
+    d_ptr( new UiSignalBlocker::Private )
 {
     if ( b ) block( b );
 }
 
 void UiSignalBlocker::block( QWidget * b )
 {
-    Q_D( UiSignalBlocker );
+    V_D( UiSignalBlocker );
     unblock();
     if ( ! b ) return;
     if ( ! b->signalsBlocked() ) {
@@ -41,7 +42,7 @@ void UiSignalBlocker::block( QWidget * b )
 
 void UiSignalBlocker::unblock()
 {
-    Q_D( UiSignalBlocker );
+    V_D( UiSignalBlocker );
     foreach ( QPointer<QWidget> w, d->blocked )
     {
         // A QPointer is a weak smart pointer. If the object was destroyed, the

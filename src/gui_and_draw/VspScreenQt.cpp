@@ -18,7 +18,7 @@
 
 VSP_DEFINE_PRIVATE( VspScreenQt )
 
-VspScreenQt::VspScreenQt( VspScreenQtPrivate & dd, ScreenMgr * mgr ) :
+VspScreenQt::VspScreenQt( VspScreenQt::Private & dd, ScreenMgr * mgr ) :
     VspScreen( mgr ),
     d_ptr( &dd )
 {
@@ -46,7 +46,7 @@ void VspScreenQt::SetNonModal()
 
 bool VspScreenQt::Update()
 {
-    Q_D( VspScreenQt );
+    V_D( VspScreenQt );
     if ( d->inUpdate ) return false;
     typedef QScopedValueRollback<bool> BoolRollback;
     BoolRollback updateFlagRollback( GetScreenMgr()->GetUpdateFlag() );
@@ -97,7 +97,7 @@ VspScreenQt::~VspScreenQt()
 {
 }
 
-VspScreenQtPrivate::VspScreenQtPrivate( VspScreenQt * q ) :
+VspScreenQt::Private::Private( VspScreenQt * q ) :
     blockSignalsInNextUpdate( false ),
     blockSignalsInUpdates( false ),
     inUpdate( false ),
@@ -106,20 +106,20 @@ VspScreenQtPrivate::VspScreenQtPrivate( VspScreenQt * q ) :
 {
 }
 
-Vehicle* VspScreenQtPrivate::veh() {
+Vehicle* VspScreenQt::Private::veh() {
     return GetScreenMgr()->GetVehiclePtr();
 }
 
-ScreenMgr* VspScreenQtPrivate::GetScreenMgr() {
+ScreenMgr* VspScreenQt::Private::GetScreenMgr() {
     return q_func()->GetScreenMgr();
 }
 
-VspScreen* VspScreenQtPrivate::GetScreen( int id ) {
+VspScreen* VspScreenQt::Private::GetScreen( int id ) {
     return GetScreenMgr()->GetScreen( id );
 }
 
 /// Connect the SetUpdateFlag to every widget's user property change notification.
-void VspScreenQtPrivate::ConnectUpdateFlag()
+void VspScreenQt::Private::ConnectUpdateFlag()
 {
     const QMetaObject * const mo = widget()->metaObject();
     QMetaMethod flagMethod = mo->method( mo->indexOfSlot("SetUpdateFlag()") );
@@ -144,32 +144,32 @@ void VspScreenQtPrivate::ConnectUpdateFlag()
 
 /// Sets the global update flag on the screen manager. Does nothing by default
 /// until EnableUpdateFlags() is first called.
-void VspScreenQtPrivate::SetUpdateFlag() {
+void VspScreenQt::Private::SetUpdateFlag() {
     if ( enableUpdateFlags ) GetScreenMgr()->SetUpdateFlag( true );
 }
 
 /// Commits changes to UpdateFlag. Has no effect outside of Update.
-void VspScreenQtPrivate::CommitUpdateFlag()
+void VspScreenQt::Private::CommitUpdateFlag()
 {
     if ( updateFlagRollback ) updateFlagRollback->commit();
 }
 
-void VspScreenQtPrivate::BlockSignalsInNextUpdate()
+void VspScreenQt::Private::BlockSignalsInNextUpdate()
 {
     blockSignalsInNextUpdate = true;
 }
 
-void VspScreenQtPrivate::BlockSignalsInUpdates()
+void VspScreenQt::Private::BlockSignalsInUpdates()
 {
     blockSignalsInUpdates = true;
 }
 
-void VspScreenQtPrivate::EnableUpdateFlags()
+void VspScreenQt::Private::EnableUpdateFlags()
 {
     enableUpdateFlags = true;
 }
 
-void VspScreenQtPrivate::LoadSetChoice( QComboBox * widget, int index, int options )
+void VspScreenQt::Private::LoadSetChoice( QComboBox * widget, int index, int options )
 {
     if ( index == KeepIndex ) {
         index = qMax(0, widget->currentIndex());
@@ -184,6 +184,6 @@ void VspScreenQtPrivate::LoadSetChoice( QComboBox * widget, int index, int optio
     widget->setCurrentIndex( index );
 }
 
-VspScreenQtPrivate::~VspScreenQtPrivate()
+VspScreenQt::Private::~Private()
 {
 }

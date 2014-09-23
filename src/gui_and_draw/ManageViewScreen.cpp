@@ -10,14 +10,14 @@
 #include "VspScreenQt_p.h"
 #include "ui_ManageViewScreen.h"
 
-class ManageViewScreenPrivate : public QDialog, public VspScreenQtPrivate
+class ManageViewScreen::Private : public QDialog, public VspScreenQt::Private
 {
     Q_OBJECT
-    Q_DECLARE_PUBLIC( ManageViewScreen )
+    VSP_DECLARE_PUBLIC( ManageViewScreen )
     Q_PRIVATE_SLOT( self(), void SetUpdateFlag() )
     Ui::ManageViewScreen Ui;
 
-    ManageViewScreenPrivate( ManageViewScreen * q );
+    Private( ManageViewScreen * q );
     VSPGUI::VspGlWindow * glwin();
     QWidget * widget() Q_DECL_OVERRIDE { return this; }
     bool Update() Q_DECL_OVERRIDE { return true; }
@@ -73,14 +73,14 @@ class ManageViewScreenPrivate : public QDialog, public VspScreenQtPrivate
 };
 VSP_DEFINE_PRIVATE( ManageViewScreen )
 
-ManageViewScreenPrivate::ManageViewScreenPrivate( ManageViewScreen * q ) :
-    VspScreenQtPrivate( q )
+ManageViewScreen::Private::Private( ManageViewScreen * q ) :
+    VspScreenQt::Private( q )
 {
     Ui.setupUi( this );
     ConnectUpdateFlag();
 }
 
-VSPGUI::VspGlWindow * ManageViewScreenPrivate::glwin()
+VSPGUI::VspGlWindow * ManageViewScreen::Private::glwin()
 {
     auto main =
             dynamic_cast<MainVSPScreen*>( GetScreen( ScreenMgr::VSP_MAIN_SCREEN ) );
@@ -89,7 +89,7 @@ VSPGUI::VspGlWindow * ManageViewScreenPrivate::glwin()
 }
 
 ManageViewScreen::ManageViewScreen( ScreenMgr * mgr ) :
-    VspScreenQt( *new ManageViewScreenPrivate( this ), mgr )
+    VspScreenQt( *new ManageViewScreen::Private( this ), mgr )
 {
     d_func()->move( 775, 50 );
 }

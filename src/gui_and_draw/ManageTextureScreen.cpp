@@ -40,10 +40,10 @@ struct TexDropDownItem
 
 }
 
-class ManageTextureScreenPrivate : public QDialog, public VspScreenQtPrivate
+class ManageTextureScreen::Private : public QDialog, public VspScreenQt::Private
 {
     Q_OBJECT
-    Q_DECLARE_PUBLIC( ManageTextureScreen )
+    VSP_DECLARE_PUBLIC( ManageTextureScreen )
     Q_PRIVATE_SLOT( self(), void SetUpdateFlag() )
 
     Ui::ManageTextureScreen Ui;
@@ -65,7 +65,7 @@ class ManageTextureScreenPrivate : public QDialog, public VspScreenQtPrivate
     std::vector<CompDropDownItem> m_CompDropDownList;
     std::vector<TexDropDownItem> m_TexDropDownList;
 
-    ManageTextureScreenPrivate( ManageTextureScreen * );
+    Private( ManageTextureScreen * );
     QWidget * widget() Q_DECL_OVERRIDE { return this; }
     bool Update() Q_DECL_OVERRIDE;
 
@@ -98,7 +98,7 @@ class ManageTextureScreenPrivate : public QDialog, public VspScreenQtPrivate
     {
         vector< Geom* > select_vec = veh()->GetActiveGeomPtrVec();
 
-        std::string fp = GetScreenMgr()->GetSelectFileScreen()->FileOpen( "Read Texture?", "TGA, JPG Files (*.{tga,jpg})" );
+        std::string fp = GetScreenMgr()->GetSelectFileScreen()->FileOpen( "Read Texture?", "TGA, JPG Files (*.tga *.jpg)" );
         if ( fp.empty() ) return;
         select_vec[0]->m_GuiDraw.getTextureMgr()->AttachTexture( fp );
 
@@ -117,8 +117,8 @@ class ManageTextureScreenPrivate : public QDialog, public VspScreenQtPrivate
 };
 VSP_DEFINE_PRIVATE( ManageTextureScreen )
 
-ManageTextureScreenPrivate::ManageTextureScreenPrivate( ManageTextureScreen * q ) :
-    VspScreenQtPrivate( q ),
+ManageTextureScreen::Private::Private( ManageTextureScreen * q ) :
+    VspScreenQt::Private( q ),
     m_GlWin( DrawObj::VSP_TEX_PREVIEW )
 {
     Ui.setupUi( this );
@@ -147,11 +147,11 @@ ManageTextureScreenPrivate::ManageTextureScreenPrivate( ManageTextureScreen * q 
 }
 
 ManageTextureScreen::ManageTextureScreen( ScreenMgr * mgr ) :
-    VspScreenQt( * new ManageTextureScreenPrivate( this ), mgr )
+    VspScreenQt( * new ManageTextureScreen::Private( this ), mgr )
 {
 }
 
-bool ManageTextureScreenPrivate::Update()
+bool ManageTextureScreen::Private::Update()
 {
     // This method invokes graphics APIs that eventually modify the OpenGL context.
     // Thus the GL window's context must be made current.
@@ -271,7 +271,7 @@ bool ManageTextureScreenPrivate::Update()
     return true;
 }
 
-void ManageTextureScreenPrivate::UpdateCurrentSelected()
+void ManageTextureScreen::Private::UpdateCurrentSelected()
 {
     m_SelectedTexItem = NULL;
 
@@ -285,7 +285,7 @@ void ManageTextureScreenPrivate::UpdateCurrentSelected()
     }
 }
 
-void ManageTextureScreenPrivate::ResetCurrentSelected()
+void ManageTextureScreen::Private::ResetCurrentSelected()
 {
     m_SelectedTexItem = NULL;
 }

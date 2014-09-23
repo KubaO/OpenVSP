@@ -23,15 +23,15 @@ using namespace VSPGraphic;
 namespace VSPGUI
 {
 
-class VspSubGlWindowPrivate {
-    Q_DECLARE_PUBLIC( VspSubGlWindow )
+class VspSubGlWindow::Private {
+    VSP_DECLARE_PUBLIC( VspSubGlWindow )
     VspSubGlWindow * const q_ptr;
     VSPGraphic::GraphicEngine gEngine;
     unsigned int id;
     DrawObj::ScreenEnum linkedScreen;
     bool initialized;
 
-    VspSubGlWindowPrivate( VspSubGlWindow *, DrawObj::ScreenEnum );
+    Private( VspSubGlWindow *, DrawObj::ScreenEnum );
     Scene * scene() {  return gEngine.getScene(); }
     virtual void initGLEW();
     virtual void update( std::vector<DrawObj *> objects );
@@ -39,8 +39,9 @@ class VspSubGlWindowPrivate {
     void loadPointData( VSPGraphic::Renderable * destObj, DrawObj * drawObj );
     void loadLineData( VSPGraphic::Renderable * destObj, DrawObj * drawObj );
 };
+VSP_DEFINE_PRIVATE( VspSubGlWindow )
 
-VspSubGlWindowPrivate::VspSubGlWindowPrivate( VspSubGlWindow * q, DrawObj::ScreenEnum screen ) :
+VspSubGlWindow::Private::Private( VspSubGlWindow * q, DrawObj::ScreenEnum screen ) :
     q_ptr( q ),
     id( 0xFFFFFFFF ),
     linkedScreen( screen ),
@@ -65,7 +66,7 @@ VspSubGlWindowPrivate::VspSubGlWindowPrivate( VspSubGlWindow * q, DrawObj::Scree
 
 VspSubGlWindow::VspSubGlWindow( DrawObj::ScreenEnum drawObjScreen, QWidget * parent ) :
     QGLWidget( parent ),
-    d_ptr( new VspSubGlWindowPrivate( this, drawObjScreen ) )
+    d_ptr( new VspSubGlWindow::Private( this, drawObjScreen ) )
 {
     setWindowTitle( "VSP Sub GL Window" );
 }
@@ -105,7 +106,7 @@ void VspSubGlWindow::update()
     QGLWidget::update();
 }
 
-void VspSubGlWindowPrivate::update( std::vector<DrawObj *> objects )
+void VspSubGlWindow::Private::update( std::vector<DrawObj *> objects )
 {
     // Remove all Scene Objects.
     std::vector<unsigned int> currIds;
@@ -190,7 +191,7 @@ void VspSubGlWindow::setZoomValue( float value )
     }
 }
 
-void VspSubGlWindowPrivate::initGLEW()
+void VspSubGlWindow::Private::initGLEW()
 {
     if( !initialized )
     {
@@ -199,7 +200,7 @@ void VspSubGlWindowPrivate::initGLEW()
     }
 }
 
-void VspSubGlWindowPrivate::loadPointData( Renderable * destObj, DrawObj * drawObj )
+void VspSubGlWindow::Private::loadPointData( Renderable * destObj, DrawObj * drawObj )
 {
     std::vector<float> vdata;
 
@@ -223,7 +224,7 @@ void VspSubGlWindowPrivate::loadPointData( Renderable * destObj, DrawObj * drawO
     destObj->appendVBuffer( vdata.data(), sizeof( float ) * vdata.size() );
 }
 
-void VspSubGlWindowPrivate::loadLineData( Renderable * destObj, DrawObj * drawObj )
+void VspSubGlWindow::Private::loadLineData( Renderable * destObj, DrawObj * drawObj )
 {
     std::vector<float> vdata;
 

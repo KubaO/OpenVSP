@@ -14,16 +14,16 @@
 #include "ui_DegenGeomScreen.h"
 #include "VspScreenQt_p.h"
 
-class DegenGeomScreenPrivate : public QDialog, public VspScreenQtPrivate
+class DegenGeomScreen::Private : public QDialog, public VspScreenQt::Private
 {
     Q_OBJECT
-    Q_DECLARE_PUBLIC( DegenGeomScreen )
+    VSP_DECLARE_PUBLIC( DegenGeomScreen )
     Q_PRIVATE_SLOT( self(), void SetUpdateFlag() )
     Ui::DegenGeomScreen Ui;
 
     QWidget * widget() Q_DECL_OVERRIDE { return this; }
     bool Update() Q_DECL_OVERRIDE;
-    DegenGeomScreenPrivate( DegenGeomScreen * q );
+    Private( DegenGeomScreen * q );
 
     Q_SLOT void on_csvFileButton_toggled( bool val )
     {
@@ -47,8 +47,8 @@ class DegenGeomScreenPrivate : public QDialog, public VspScreenQtPrivate
 };
 VSP_DEFINE_PRIVATE( DegenGeomScreen )
 
-DegenGeomScreenPrivate::DegenGeomScreenPrivate( DegenGeomScreen * q ) :
-    VspScreenQtPrivate( q )
+DegenGeomScreen::Private::Private( DegenGeomScreen * q ) :
+    VspScreenQt::Private( q )
 {
     Ui.setupUi( this );
     BlockSignalsInUpdates();
@@ -57,11 +57,11 @@ DegenGeomScreenPrivate::DegenGeomScreenPrivate( DegenGeomScreen * q ) :
 }
 
 DegenGeomScreen::DegenGeomScreen( ScreenMgr* mgr ) :
-    VspScreenQt( *new DegenGeomScreenPrivate( this ), mgr )
+    VspScreenQt( *new DegenGeomScreen::Private( this ), mgr )
 {
 }
 
-bool DegenGeomScreenPrivate::Update()
+bool DegenGeomScreen::Private::Update()
 {
     LoadSetChoice( Ui.setChoice, KeepIndex );
     Ui.csvFileButton->setChecked( veh()->getExportDegenGeomCsvFile() );
@@ -74,7 +74,7 @@ bool DegenGeomScreenPrivate::Update()
 DegenGeomScreen::~DegenGeomScreen() {}
 
 /// \todo This contains pseudo-synchronous hacks.
-void DegenGeomScreenPrivate::on_computeButton_clicked()
+void DegenGeomScreen::Private::on_computeButton_clicked()
 {
     Ui.outputTextDisplay->clear();
     Ui.outputTextDisplay->append( "Computing degenerate geometry..." );

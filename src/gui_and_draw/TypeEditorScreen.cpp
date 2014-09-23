@@ -11,16 +11,16 @@
 #include "ui_TypeEditorScreen.h"
 #include "VspScreenQt_p.h"
 
-class TypeEditorScreenPrivate : public QDialog, public VspScreenQtPrivate
+class TypeEditorScreen::Private : public QDialog, public VspScreenQt::Private
 {
     Q_OBJECT
-    Q_DECLARE_PUBLIC( TypeEditorScreen )
+    VSP_DECLARE_PUBLIC( TypeEditorScreen )
     Q_PRIVATE_SLOT( self(), void SetUpdateFlag() )
     Ui::TypeEditorScreen Ui;
 
     QWidget * widget() Q_DECL_OVERRIDE { return this; }
     bool Update() Q_DECL_OVERRIDE;
-    TypeEditorScreenPrivate( TypeEditorScreen * );
+    Private( TypeEditorScreen * );
 
     Q_SLOT void on_addButton_clicked()
     {
@@ -65,8 +65,8 @@ class TypeEditorScreenPrivate : public QDialog, public VspScreenQtPrivate
 };
 VSP_DEFINE_PRIVATE( TypeEditorScreen )
 
-TypeEditorScreenPrivate::TypeEditorScreenPrivate( TypeEditorScreen * q ) :
-    VspScreenQtPrivate( q )
+TypeEditorScreen::Private::Private( TypeEditorScreen * q ) :
+    VspScreenQt::Private( q )
 {
     Ui.setupUi( this );
     BlockSignalsInUpdates();
@@ -74,10 +74,10 @@ TypeEditorScreenPrivate::TypeEditorScreenPrivate( TypeEditorScreen * q ) :
 }
 
 TypeEditorScreen::TypeEditorScreen( ScreenMgr* mgr ) :
-    VspScreenQt( *new TypeEditorScreenPrivate( this ), mgr )
+    VspScreenQt( *new TypeEditorScreen::Private( this ), mgr )
 {}
 
-bool TypeEditorScreenPrivate::Update()
+bool TypeEditorScreen::Private::Update()
 {
     //==== Load Type Names and Values ====//
     //==== Only Display Editable Types =====//

@@ -9,16 +9,16 @@
 #define UISIGNALBLOCKER_H
 
 #include <QScopedPointer>
+#include "VspObj.h"
 
 class QWidget;
-class UiSignalBlockerPrivate;
 
 /// Blocks all signals from a given Ui base widget and its children.
 class UiSignalBlocker
 {
-    Q_DECLARE_PRIVATE( UiSignalBlocker )
+    VSP_DECLARE_PRIVATE( UiSignalBlocker )
     Q_DISABLE_COPY( UiSignalBlocker )
-    QScopedPointer< UiSignalBlockerPrivate > const d_ptr;
+    QScopedPointer< Private > const d_ptr;
 public:
     /// Creates a blocker and invokes block() on the \a widget, if provided.
     explicit UiSignalBlocker( QWidget * widget = 0 );

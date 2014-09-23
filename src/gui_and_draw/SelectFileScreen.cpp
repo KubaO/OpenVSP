@@ -17,30 +17,31 @@ using std::string;
 
 /* Note: QFileDialog saves its favorite list automatically in QSettings.
  * We do it ourselves, nevertheless. */
-class SelectFileScreenPrivate {
-    Q_DISABLE_COPY(SelectFileScreenPrivate)
+class SelectFileScreen::Private {
+    Q_DISABLE_COPY( Private )
 public:
-    Q_DECLARE_PUBLIC(SelectFileScreen)
+    VSP_DECLARE_PUBLIC( SelectFileScreen )
     SelectFileScreen* const q_ptr;
 
     QFileDialog Window;
 
-    SelectFileScreenPrivate(SelectFileScreen*);
+    Private(SelectFileScreen*);
     void LoadFavorites();
     void SaveFavorites();
     string FileChooser( const char * title, const char * filter, const char * dir = 0);
 };
+VSP_DEFINE_PRIVATE( SelectFileScreen )
 
 SelectFileScreen::SelectFileScreen() :
-    d_ptr(new SelectFileScreenPrivate(this))
+    d_ptr(new SelectFileScreen::Private(this))
 {
-    Q_D(SelectFileScreen);
+    V_D(SelectFileScreen);
     d->Window.setDirectory(QDir::currentPath());
     d->Window.setNameFilter("(*.*)");;
     d->LoadFavorites();
 }
 
-void SelectFileScreenPrivate::LoadFavorites()
+void SelectFileScreen::Private::LoadFavorites()
 {
     QList<QUrl> favorites;
     Fl_Preferences prefs( Fl_Preferences::USER, "NASA", "VSP" );
@@ -58,7 +59,7 @@ void SelectFileScreenPrivate::LoadFavorites()
     prefs.flush();
 }
 
-void SelectFileScreenPrivate::SaveFavorites()
+void SelectFileScreen::Private::SaveFavorites()
 {
     QList<QUrl> favorites = Window.sidebarUrls();
     Fl_Preferences prefs( Fl_Preferences::USER, "NASA", "VSP" );
@@ -74,7 +75,7 @@ void SelectFileScreenPrivate::SaveFavorites()
     prefs.flush();
 }
 
-string SelectFileScreenPrivate::FileChooser( const char* title, const char* filter, const char * dir )
+string SelectFileScreen::Private::FileChooser( const char* title, const char* filter, const char * dir )
 {
     string file_name;
 
@@ -102,7 +103,7 @@ string SelectFileScreenPrivate::FileChooser( const char* title, const char* filt
 
 string SelectFileScreen::FileOpen( const char* title, const char* filter, const char* dir )
 {
-    Q_D(SelectFileScreen);
+    V_D(SelectFileScreen);
     d->Window.setFileMode( QFileDialog::ExistingFile );
     d->Window.setAcceptMode( QFileDialog::AcceptOpen );
     return d->FileChooser( title, filter, dir );
@@ -110,7 +111,7 @@ string SelectFileScreen::FileOpen( const char* title, const char* filter, const 
 
 string SelectFileScreen::FileSave( const char* title, const char* filter, const char* dir )
 {
-    Q_D(SelectFileScreen);
+    V_D(SelectFileScreen);
     d->Window.setFileMode( QFileDialog::AnyFile );
     d->Window.setAcceptMode( QFileDialog::AcceptSave );
     return d->FileChooser( title, filter, dir );
@@ -119,6 +120,6 @@ string SelectFileScreen::FileSave( const char* title, const char* filter, const 
 SelectFileScreen::~SelectFileScreen()
 {}
 
-SelectFileScreenPrivate::SelectFileScreenPrivate(SelectFileScreen * parent) :
+SelectFileScreen::Private::Private(SelectFileScreen * parent) :
     q_ptr(parent)
 {}

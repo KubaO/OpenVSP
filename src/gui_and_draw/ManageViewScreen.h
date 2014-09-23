@@ -11,7 +11,6 @@
 
 #include "VspScreenQt.h"
 
-class ManageViewScreenPrivate;
 class ManageViewScreen : public VspScreenQt
 {
     VSP_DECLARE_PRIVATE( ManageViewScreen )

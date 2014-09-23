@@ -13,7 +13,6 @@
 
 #include "VspScreenQt.h"
 
-class TypeEditorScreenPrivate;
 class TypeEditorScreen : public VspScreenQt
 {
     VSP_DECLARE_PRIVATE( TypeEditorScreen )

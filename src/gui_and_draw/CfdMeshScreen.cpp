@@ -18,9 +18,9 @@
 #include "ui_CfdMeshScreen.h"
 
 
-class CfdMeshScreenPrivate : public QDialog, public VspScreenQtPrivate {
+class CfdMeshScreen::Private : public QDialog, public VspScreenQt::Private {
     Q_OBJECT
-    Q_DECLARE_PUBLIC( CfdMeshScreen )
+    VSP_DECLARE_PUBLIC( CfdMeshScreen )
     Q_PRIVATE_SLOT( self(), void SetUpdateFlag() )
     Ui::CfdMeshScreen Ui;
 
@@ -92,7 +92,7 @@ class CfdMeshScreenPrivate : public QDialog, public VspScreenQtPrivate {
     QWidget * widget() Q_DECL_OVERRIDE { return this; }
     bool Update() Q_DECL_OVERRIDE;
     std::string truncateFileName( const std::string &fn, int len );
-    explicit CfdMeshScreenPrivate( CfdMeshScreen * );
+    explicit Private( CfdMeshScreen * );
 
     Q_SLOT void on_rigorLimitButton_toggled( bool val )
     {
@@ -289,8 +289,8 @@ class CfdMeshScreenPrivate : public QDialog, public VspScreenQtPrivate {
 };
 VSP_DEFINE_PRIVATE( CfdMeshScreen )
 
-CfdMeshScreenPrivate::CfdMeshScreenPrivate( CfdMeshScreen* q ) :
-    VspScreenQtPrivate( q )
+CfdMeshScreen::Private::Private( CfdMeshScreen* q ) :
+    VspScreenQt::Private( q )
 {
     Ui.setupUi( this );
 
@@ -352,7 +352,7 @@ CfdMeshScreenPrivate::CfdMeshScreenPrivate( CfdMeshScreen* q ) :
 }
 
 CfdMeshScreen::CfdMeshScreen( ScreenMgr* mgr ) :
-    VspScreenQt( *new CfdMeshScreenPrivate(this), mgr )
+    VspScreenQt( *new CfdMeshScreen::Private(this), mgr )
 {
 }
 
@@ -368,7 +368,7 @@ void CfdMeshScreen::Hide()
     d_func()->SetUpdateFlag();
 }
 
-bool CfdMeshScreenPrivate::Update()
+bool CfdMeshScreen::Private::Update()
 {
     LoadSetChoice( Ui.setChoice, CfdMeshMgr.GetCfdSettingsPtr()->m_SelectedSetIndex() );
 
@@ -669,7 +669,7 @@ bool CfdMeshScreenPrivate::Update()
 
 void CfdMeshScreen::AddOutputText( const string &text )
 {
-    Q_D( CfdMeshScreen );
+    V_D( CfdMeshScreen );
     d->Ui.outputText->append( text.c_str() );
     d->Ui.outputText->ensureCursorVisible();
 }
@@ -682,7 +682,7 @@ void CfdMeshScreen::LoadDrawObjs( vector< DrawObj* > &draw_obj_vec )
     }
 }
 
-string CfdMeshScreenPrivate::truncateFileName( const string &fn, int len )
+string CfdMeshScreen::Private::truncateFileName( const string &fn, int len )
 {
     string trunc( fn );
     if ( (int)trunc.length() > len )

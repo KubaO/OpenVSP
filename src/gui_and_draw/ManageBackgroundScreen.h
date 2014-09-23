@@ -10,7 +10,6 @@
 
 #include "VspScreenQt.h"
 
-class ManageBackgroundScreenPrivate;
 class ManageBackgroundScreen : public VspScreenQt
 {
     VSP_DECLARE_PRIVATE( ManageBackgroundScreen )

@@ -10,19 +10,19 @@
 #include "ui_PickSetScreen.h"
 #include "VspScreenQt_p.h"
 
-class PickSetScreenPrivate : public QDialog, public VspScreenQtPrivate {
+class PickSetScreen::Private : public QDialog, public VspScreenQt::Private {
     Q_OBJECT
-    Q_DECLARE_PUBLIC( PickSetScreen )
+    VSP_DECLARE_PUBLIC( PickSetScreen )
     Ui::PickSetScreen Ui;
 
     QWidget * widget() Q_DECL_OVERRIDE { return this; }
     bool Update() Q_DECL_OVERRIDE { return true; }
-    PickSetScreenPrivate( PickSetScreen * q );
+    Private( PickSetScreen * q );
 };
 VSP_DEFINE_PRIVATE( PickSetScreen )
 
-PickSetScreenPrivate::PickSetScreenPrivate( PickSetScreen * q ) :
-    VspScreenQtPrivate( q )
+PickSetScreen::Private::Private( PickSetScreen * q ) :
+    VspScreenQt::Private( q )
 {
     Ui.setupUi( this );
     connect( Ui.buttonBox, SIGNAL( accepted() ), SLOT( accept() ) );
@@ -30,15 +30,15 @@ PickSetScreenPrivate::PickSetScreenPrivate( PickSetScreen * q ) :
 }
 
 PickSetScreen::PickSetScreen( ScreenMgr * mgr ) :
-    VspScreenQt( *new PickSetScreenPrivate( this ), mgr )
+    VspScreenQt( *new PickSetScreen::Private( this ), mgr )
 {
 }
 
 int PickSetScreen::PickSet( const std::string & title )
 {
-    Q_D( PickSetScreen );
+    V_D( PickSetScreen );
     d->Ui.screenHeader->setText( title.c_str() );
-    d->LoadSetChoice( d->Ui.setChoice, VspScreenQtPrivate::KeepIndex );
+    d->LoadSetChoice( d->Ui.setChoice, VspScreenQt::Private::KeepIndex );
     if ( d->exec() == QDialog::Accepted )
     {
         return d->Ui.setChoice->currentIndex();

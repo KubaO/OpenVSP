@@ -9,6 +9,7 @@
 #define _VSP_GUI_2D_GL_WINDOW_H
 
 #include "DrawObj.h"
+#include "VspObj.h"
 #include <QGLWidget>
 
 namespace VSPGraphic
@@ -19,13 +20,12 @@ class GraphicEngine;
 namespace VSPGUI
 {
 
-class VspSubGlWindowPrivate;
 /// This class provides all functionalites of a 2D opengl window.
 class VspSubGlWindow : public QGLWidget
 {
     Q_OBJECT
-    Q_DECLARE_PRIVATE( VspSubGlWindow )
-    QScopedPointer< VspSubGlWindowPrivate > const d_ptr;
+    VSP_DECLARE_PRIVATE( VspSubGlWindow )
+    QScopedPointer< Private > const d_ptr;
 public:
     /*! \param drawObjScreen specific drawObj screen to link. */
     VspSubGlWindow( DrawObj::ScreenEnum drawObjScreen, QWidget * parent = 0 );

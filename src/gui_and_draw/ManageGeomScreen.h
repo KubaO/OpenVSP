@@ -16,7 +16,6 @@
 #include <vector>
 
 class DrawObj;
-class ManageGeomScreenPrivate;
 class ManageGeomScreen : public VspScreenQt
 {
     VSP_DECLARE_PRIVATE( ManageGeomScreen )

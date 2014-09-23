@@ -11,6 +11,7 @@
 
 class PSliceScreen : public VspScreenQt
 {
+    VSP_DECLARE_PRIVATE( PSliceScreen )
 public:
     PSliceScreen( ScreenMgr* mgr );
     ~PSliceScreen();

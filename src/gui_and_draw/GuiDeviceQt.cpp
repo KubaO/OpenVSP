@@ -19,8 +19,8 @@
 // GuiDeviceQt
 //
 
-class GuiDeviceQtPrivate {
-    Q_DECLARE_PUBLIC( GuiDeviceQt )
+class GuiDeviceQt::Private {
+    VSP_DECLARE_PUBLIC( GuiDeviceQt )
 public:
     GuiDeviceQt * const q_ptr;
 
@@ -28,12 +28,13 @@ public:
     int ResizableWidgetIndex;
     vector< QWidget* > Widgets;
 
-    GuiDeviceQtPrivate( GuiDeviceQt * q ) :
+    Private( GuiDeviceQt * q ) :
         q_ptr( q ), Screen( 0 ), ResizableWidgetIndex( 0 ) {}
-    virtual ~GuiDeviceQtPrivate() {}
+    virtual ~Private() {}
 };
+VSP_DEFINE_PRIVATE( GuiDeviceQt )
 
-GuiDeviceQt::GuiDeviceQt( GuiDeviceQtPrivate & d ) :
+GuiDeviceQt::GuiDeviceQt( GuiDeviceQt::Private &d ) :
     d_ptr(&d)
 {}
 
@@ -44,7 +45,7 @@ void GuiDeviceQt::Init( VspScreenQt * screen )
 
 void GuiDeviceQt::AddWidget( QWidget* w, bool resizable_flag )
 {
-    Q_D(GuiDeviceQt);
+    V_D(GuiDeviceQt);
     if ( w )
     {
         d->Widgets.push_back( w );
@@ -102,20 +103,20 @@ GuiDeviceQt::~GuiDeviceQt() {}
 // ToggleButton
 //
 
-class ToggleButtonPrivate : public QObject, public GuiDeviceQtPrivate {
+class ToggleButton::Private : public QObject, public GuiDeviceQt::Private {
     Q_OBJECT
-    Q_DECLARE_PUBLIC( ToggleButton )
+    VSP_DECLARE_PUBLIC( ToggleButton )
     QAbstractButton* Button;
 
-    ToggleButtonPrivate( ToggleButton* q ) :
-        GuiDeviceQtPrivate( q ), Button( 0 ) {}
+    Private( ToggleButton* q ) :
+        GuiDeviceQt::Private( q ), Button( 0 ) {}
 
     Q_SLOT void on_toggled( bool );
 };
 VSP_DEFINE_PRIVATE( ToggleButton )
 
 ToggleButton::ToggleButton() :
-    GuiDeviceQt( * new ToggleButtonPrivate( this ) )
+    GuiDeviceQt( * new ToggleButton::Private( this ) )
 {
     m_Type = GDEV_TOGGLE_BUTTON;
 }
@@ -123,7 +124,7 @@ ToggleButton::ToggleButton() :
 void ToggleButton::Init( VspScreenQt * screen, QAbstractButton * button )
 {
     Q_ASSERT( button );
-    Q_D( ToggleButton );
+    V_D( ToggleButton );
     GuiDeviceQt::Init( screen );
     AddWidget( button );
     d->Button = button;
@@ -134,7 +135,7 @@ void ToggleButton::Init( VspScreenQt * screen, QAbstractButton * button )
 /// Set Button Value
 void ToggleButton::SetValAndLimits( Parm* p )
 {
-    Q_D( ToggleButton );
+    V_D( ToggleButton );
     Q_ASSERT( d->Button );
     if ( !p ) return;
 
@@ -145,9 +146,9 @@ void ToggleButton::SetValAndLimits( Parm* p )
     d->Button->setChecked( bool_p->Get() );
 }
 
-void ToggleButtonPrivate::on_toggled( bool val )
+void ToggleButton::Private::on_toggled( bool val )
 {
-    Q_Q( ToggleButton );
+    V_Q( ToggleButton );
     Parm* parm_ptr = q->SetParmID( q->m_ParmID );
     if ( !parm_ptr ) return;
     parm_ptr->SetFromDevice( val );
@@ -160,23 +161,23 @@ ToggleButton::~ToggleButton() {}
 // Slider
 //
 
-class SliderPrivate : public QObject, public GuiDeviceQtPrivate
+class Slider::Private : public QObject, public GuiDeviceQt::Private
 {
     Q_OBJECT
-    Q_DECLARE_PUBLIC( Slider )
+    VSP_DECLARE_PUBLIC( Slider )
 protected:
     AbstractDoubleSlider* slider;
     double Range;
     double MinBound;
     double MaxBound;
 
-    SliderPrivate( Slider * q );
+    Private( Slider * q );
     Q_SLOT virtual void on_valueChanged( double );
 };
 VSP_DEFINE_PRIVATE( Slider )
 
-SliderPrivate::SliderPrivate( Slider * q ) :
-    GuiDeviceQtPrivate( q ),
+Slider::Private::Private( Slider * q ) :
+    GuiDeviceQt::Private( q ),
     slider(0),
     Range(10.0),
     MinBound(0.0),
@@ -184,12 +185,12 @@ SliderPrivate::SliderPrivate( Slider * q ) :
 {}
 
 Slider::Slider() :
-    GuiDeviceQt( * new SliderPrivate( this ) )
+    GuiDeviceQt( * new Slider::Private( this ) )
 {
     m_Type = GDEV_SLIDER;
 }
 
-Slider::Slider( SliderPrivate & q ) :
+Slider::Slider(Private &q ) :
     GuiDeviceQt( q )
 {
     m_Type = GDEV_SLIDER;
@@ -197,7 +198,7 @@ Slider::Slider( SliderPrivate & q ) :
 
 void Slider::Init(VspScreenQt* screen, AbstractDoubleSlider *slider_widget, double range )
 {
-    Q_D( Slider );
+    V_D( Slider );
     GuiDeviceQt::Init( screen );
     AddWidget( slider_widget );
     SetRange( range );
@@ -208,7 +209,7 @@ void Slider::Init(VspScreenQt* screen, AbstractDoubleSlider *slider_widget, doub
 
 void Slider::SetValAndLimits( Parm* parm_ptr )
 {
-    Q_D( Slider );
+    V_D( Slider );
     assert( d->slider );
     UiSignalBlocker block( d->slider );
     double new_val = parm_ptr->Get();
@@ -230,14 +231,14 @@ void Slider::SetValAndLimits( Parm* parm_ptr )
 
 void Slider::SetRange( double range )
 {
-    Q_D( Slider );
+    V_D( Slider );
     UiSignalBlocker block( d->slider );
     d_func()->Range = range;
 }
 
-void SliderPrivate::on_valueChanged( double new_val )
+void Slider::Private::on_valueChanged( double new_val )
 {
-    Q_Q( Slider );
+    V_Q( Slider );
     Parm* parm_ptr = q->SetParmID( q->m_ParmID );
     if ( !parm_ptr ) return;
 
@@ -252,24 +253,24 @@ Slider::~Slider() {}
 // LogSlider
 //
 
-class LogSliderPrivate : public SliderPrivate
+class LogSlider::Private : public Slider::Private
 {
     Q_OBJECT
-    Q_DECLARE_PUBLIC( LogSlider )
+    VSP_DECLARE_PUBLIC( LogSlider )
 
-    LogSliderPrivate( LogSlider * q ) : SliderPrivate( q ) {}
+    Private( LogSlider * q ) : Slider::Private( q ) {}
     void on_valueChanged( double ) Q_DECL_OVERRIDE;
 };
 VSP_DEFINE_PRIVATE( LogSlider )
 
-LogSlider::LogSlider() : Slider( *new LogSliderPrivate( this ))
+LogSlider::LogSlider() : Slider( *new LogSlider::Private( this ))
 {
     m_Type = GDEV_LOG_SLIDER;
 }
 
 void LogSlider::SetValAndLimits( Parm* parm_ptr )
 {
-    Q_D( LogSlider );
+    V_D( LogSlider );
     double m_Tol = 0.000001;
     assert( d->slider );
     UiSignalBlocker block( d->slider );
@@ -291,9 +292,9 @@ void LogSlider::SetValAndLimits( Parm* parm_ptr )
 }
 
 
-void LogSliderPrivate::on_valueChanged( double val )
+void LogSlider::Private::on_valueChanged( double val )
 {
-    Q_Q( LogSlider );
+    V_Q( LogSlider );
     Parm* parm_ptr = q->SetParmID( q->m_ParmID );
     if ( !parm_ptr ) return;
 
@@ -309,34 +310,34 @@ LogSlider::~LogSlider() {}
 // Input
 //
 
-class InputPrivate : public QObject, public GuiDeviceQtPrivate
+class Input::Private : public QObject, public GuiDeviceQt::Private
 {
     Q_OBJECT
-    Q_DECLARE_PUBLIC( Input )
+    VSP_DECLARE_PUBLIC( Input )
     QDoubleSpinBox* input;
     bool ParmButtonFlag;
     ParmButton ParmButton;
 
-    InputPrivate( Input * q );
+    Private( Input * q );
     Q_SLOT void on_valueChanged( double );
 };
 VSP_DEFINE_PRIVATE( Input )
 
-InputPrivate::InputPrivate( Input * q ) :
-    GuiDeviceQtPrivate( q ),
+Input::Private::Private( Input * q ) :
+    GuiDeviceQt::Private( q ),
     input( 0 ),
     ParmButtonFlag( false )
 {}
 
 Input::Input() :
-    GuiDeviceQt( *new InputPrivate( this ) )
+    GuiDeviceQt( *new Input::Private( this ) )
 {
     m_Type = GDEV_INPUT;
 }
 
 void Input::Init( VspScreenQt* screen, QDoubleSpinBox* input, int decimals, QAbstractButton* parm_button )
 {
-    Q_D( Input );
+    V_D( Input );
     assert( input );
     GuiDeviceQt::Init( screen );
     AddWidget( parm_button );
@@ -357,7 +358,7 @@ void Input::Init( VspScreenQt* screen, QDoubleSpinBox* input, int decimals, QAbs
 
 void Input::SetDecimals( int decimals )
 {
-    Q_D( Input );
+    V_D( Input );
     UiSignalBlocker block( d->input );
     if ( d->input ) d->input->setDecimals( decimals );
 }
@@ -369,7 +370,7 @@ void Input::SetButtonNameUpdate( bool flag )
 
 void Input::SetValAndLimits( Parm* parm_ptr )
 {
-    Q_D( Input );
+    V_D( Input );
     assert( d->input );
     UiSignalBlocker block( d->input );
     double new_val = parm_ptr->Get();
@@ -387,9 +388,9 @@ void Input::SetValAndLimits( Parm* parm_ptr )
     }
 }
 
-void InputPrivate::on_valueChanged( double new_val )
+void Input::Private::on_valueChanged( double new_val )
 {
-    Q_Q( Input );
+    V_Q( Input );
     Parm* parm_ptr = q->SetParmID( q->m_ParmID );
     if ( !parm_ptr ) return;
 
@@ -405,33 +406,33 @@ Input::~Input() {}
 // ParmButton
 //
 
-class ParmButtonPrivate : public QObject, public GuiDeviceQtPrivate
+class ParmButton::Private : public QObject, public GuiDeviceQt::Private
 {
     Q_OBJECT
-    Q_DECLARE_PUBLIC( ParmButton )
+    VSP_DECLARE_PUBLIC( ParmButton )
     QAbstractButton* Button;
     bool ButtonNameUpdate;
 
-    ParmButtonPrivate( ParmButton * q );
+    Private( ParmButton * q );
     Q_SLOT void on_clicked();
 };
 VSP_DEFINE_PRIVATE( ParmButton )
 
-ParmButtonPrivate::ParmButtonPrivate( ParmButton * q ) :
-    GuiDeviceQtPrivate( q ),
+ParmButton::Private::Private( ParmButton * q ) :
+    GuiDeviceQt::Private( q ),
     Button( 0 ),
     ButtonNameUpdate( false )
 {}
 
 ParmButton::ParmButton() :
-    GuiDeviceQt( *new ParmButtonPrivate( this ) )
+    GuiDeviceQt( *new ParmButton::Private( this ) )
 {
     m_Type = GDEV_PARM_BUTTON;
 }
 
 void ParmButton::Init( VspScreenQt* screen, QAbstractButton* button )
 {
-    Q_D( ParmButton );
+    V_D( ParmButton );
     GuiDeviceQt::Init( screen );
     AddWidget( button );
     d->Button = button;
@@ -441,7 +442,7 @@ void ParmButton::Init( VspScreenQt* screen, QAbstractButton* button )
 
 void ParmButton::Update( const string& parm_id )
 {
-    Q_D( ParmButton );
+    V_D( ParmButton );
     GuiDeviceQt::Update( parm_id );
 
     if( d->ButtonNameUpdate )
@@ -462,9 +463,9 @@ void ParmButton::SetButtonNameUpdate( bool flag )
 void ParmButton::SetValAndLimits( Parm* )
 {}
 
-void ParmButtonPrivate::on_clicked()
+void ParmButton::Private::on_clicked()
 {
-    Q_Q( ParmButton );
+    V_Q( ParmButton );
     ParmMgr.SetActiveParm( q->m_ParmID );
 
     Screen->GetScreenMgr()->ShowScreen( ScreenMgr::VSP_PARM_SCREEN );
@@ -480,9 +481,9 @@ ParmButton::~ParmButton() {}
 // SliderInput
 //
 
-class SliderInputPrivate : public GuiDeviceQtPrivate
+class SliderInput::Private : public GuiDeviceQt::Private
 {
-    Q_DECLARE_PUBLIC( SliderInput )
+    VSP_DECLARE_PUBLIC( SliderInput )
     Slider Slider;
     Input Input;
 
@@ -492,19 +493,19 @@ class SliderInputPrivate : public GuiDeviceQtPrivate
     bool ParmButtonFlag;
     ParmButton ParmButton;
 
-    SliderInputPrivate( SliderInput* );
+    Private( SliderInput* );
 };
 VSP_DEFINE_PRIVATE( SliderInput )
 
-SliderInputPrivate::SliderInputPrivate( SliderInput * q ) :
-    GuiDeviceQtPrivate( q ),
+SliderInput::Private::Private( SliderInput * q ) :
+    GuiDeviceQt::Private( q ),
     LogSliderFlag( false ),
     ParmButtonFlag( false )
 {
 }
 
 SliderInput::SliderInput() :
-    GuiDeviceQt( *new SliderInputPrivate( this ) )
+    GuiDeviceQt( *new SliderInput::Private( this ) )
 {
     m_Type = GDEV_SLIDER_INPUT;
 }
@@ -513,7 +514,7 @@ void SliderInput::Init(VspScreenQt* screen, AbstractDoubleSlider *slider, QDoubl
                           double range, int decimals, QAbstractButton* parm_button,
                           bool log_slider )
 {
-    Q_D( SliderInput );
+    V_D( SliderInput );
     GuiDeviceQt::Init( screen );
 
     if ( parm_button )
@@ -542,7 +543,7 @@ void SliderInput::Init(VspScreenQt* screen, AbstractDoubleSlider *slider, QDoubl
 
 void SliderInput::Update( const string& parm_id )
 {
-    Q_D( SliderInput );
+    V_D( SliderInput );
     if ( d->LogSliderFlag )
     {
         d->LogSlider.Update( parm_id );

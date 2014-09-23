@@ -9,15 +9,15 @@
 #define DOUBLESLIDER_H
 
 #include "AbstractDoubleSlider.h"
+#include "VspObj.h"
 
-class DoubleSliderPrivate;
 class DoubleSlider : public AbstractDoubleSlider
 {
     Q_OBJECT
-    Q_DECLARE_PRIVATE( DoubleSlider )
+    VSP_DECLARE_PRIVATE( DoubleSlider )
     Q_PROPERTY( Qt::Orientation orientation READ orientation WRITE setOrientation )
     Q_PRIVATE_SLOT( d_func(), void on_valueChanged( int ) )
-    QScopedPointer<DoubleSliderPrivate> const d_ptr;
+    QScopedPointer<Private> const d_ptr;
 public:
     explicit DoubleSlider(QWidget *parent = 0);
     ~DoubleSlider();

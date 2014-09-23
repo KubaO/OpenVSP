@@ -11,7 +11,6 @@
 #include "VspScreenQt.h"
 #include <string>
 
-class ExportScreenPrivate;
 class ExportScreen : public VspScreenQt
 {
     VSP_DECLARE_PRIVATE( ExportScreen )

@@ -15,7 +15,6 @@
 class vec3d;
 class DrawObj;
 
-class ManageLabelScreenPrivate;
 class ManageLabelScreen : public VspScreenQt
 {
     VSP_DECLARE_PRIVATE( ManageLabelScreen )

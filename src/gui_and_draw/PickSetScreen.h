@@ -11,7 +11,6 @@
 #include "VspScreenQt.h"
 #include <string>
 
-class PickSetScreenPrivate;
 class PickSetScreen : public VspScreenQt
 {
     VSP_DECLARE_PRIVATE( PickSetScreen )

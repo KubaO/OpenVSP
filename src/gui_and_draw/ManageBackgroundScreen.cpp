@@ -24,10 +24,10 @@
 #include "VspScreenQt_p.h"
 #include <QFileDialog>
 
-class ManageBackgroundScreenPrivate : public QDialog, public VspScreenQtPrivate
+class ManageBackgroundScreen::Private : public QDialog, public VspScreenQt::Private
 {
     Q_OBJECT
-    Q_DECLARE_PUBLIC( ManageBackgroundScreen )
+    VSP_DECLARE_PUBLIC( ManageBackgroundScreen )
     Q_PRIVATE_SLOT( self(), void SetUpdateFlag() )
 
     QWidget * widget() Q_DECL_OVERRIDE { return this; }
@@ -35,7 +35,7 @@ class ManageBackgroundScreenPrivate : public QDialog, public VspScreenQtPrivate
     Ui::BackgroundScreen Ui;
     QFileDialog * fileDialog;
 
-    ManageBackgroundScreenPrivate( ManageBackgroundScreen * q );
+    Private( ManageBackgroundScreen * q );
     VSPGraphic::Background * Background();
 
     Q_SLOT void on_redSlider_valueChanged( double val )
@@ -106,8 +106,8 @@ class ManageBackgroundScreenPrivate : public QDialog, public VspScreenQtPrivate
 };
 VSP_DEFINE_PRIVATE( ManageBackgroundScreen )
 
-ManageBackgroundScreenPrivate::ManageBackgroundScreenPrivate( ManageBackgroundScreen * q) :
-    VspScreenQtPrivate( q ),
+ManageBackgroundScreen::Private::Private( ManageBackgroundScreen * q) :
+    VspScreenQt::Private( q ),
     fileDialog( 0 )
 {
     Ui.setupUi( this );
@@ -137,13 +137,13 @@ ManageBackgroundScreenPrivate::ManageBackgroundScreenPrivate( ManageBackgroundSc
 }
 
 ManageBackgroundScreen::ManageBackgroundScreen( ScreenMgr * mgr ) :
-    VspScreenQt( *new ManageBackgroundScreenPrivate( this ), mgr )
+    VspScreenQt( *new ManageBackgroundScreen::Private( this ), mgr )
 {
 }
 
 ManageBackgroundScreen::~ManageBackgroundScreen() {}
 
-bool ManageBackgroundScreenPrivate::Update()
+bool ManageBackgroundScreen::Private::Update()
 {
     MainVSPScreen * main =
         dynamic_cast<MainVSPScreen*>( GetScreenMgr()->GetScreen( ScreenMgr::VSP_MAIN_SCREEN ) );
@@ -196,7 +196,7 @@ bool ManageBackgroundScreenPrivate::Update()
     return true;
 }
 
-VSPGraphic::Background * ManageBackgroundScreenPrivate::Background()
+VSPGraphic::Background * ManageBackgroundScreen::Private::Background()
 {
     MainVSPScreen * main =
         dynamic_cast<MainVSPScreen*>( GetScreen( ScreenMgr::VSP_MAIN_SCREEN ) );
@@ -210,7 +210,7 @@ VSPGraphic::Background * ManageBackgroundScreenPrivate::Background()
     return viewport->getBackground();
 }
 
-void ManageBackgroundScreenPrivate::on_jpegBackButton_clicked()
+void ManageBackgroundScreen::Private::on_jpegBackButton_clicked()
 {
     if ( !Background() ) return;
     if ( !fileDialog ) {
@@ -222,7 +222,7 @@ void ManageBackgroundScreenPrivate::on_jpegBackButton_clicked()
     fileDialog->open();
 }
 
-void ManageBackgroundScreenPrivate::texture_selected()
+void ManageBackgroundScreen::Private::texture_selected()
 {
     QString tf = fileDialog->selectedFiles().first();
     Background()->removeImage();

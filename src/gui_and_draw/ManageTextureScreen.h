@@ -10,7 +10,6 @@
 
 #include "VspScreenQt.h"
 
-class ManageTextureScreenPrivate;
 class ManageTextureScreen : public VspScreenQt
 {
     VSP_DECLARE_PRIVATE( ManageTextureScreen )

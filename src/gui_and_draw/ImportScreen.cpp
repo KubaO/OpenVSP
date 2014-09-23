@@ -13,15 +13,15 @@
 
 using namespace vsp;
 
-class ImportScreenPrivate : public QDialog, public VspScreenQtPrivate
+class ImportScreen::Private : public QDialog, public VspScreenQt::Private
 {
     Q_OBJECT
-    Q_DECLARE_PUBLIC( ImportScreen )
+    VSP_DECLARE_PUBLIC( ImportScreen )
     Ui::ImportScreen Ui;
 
     QWidget * widget() Q_DECL_OVERRIDE { return this; }
     bool Update() Q_DECL_OVERRIDE { return true; }
-    ImportScreenPrivate( ImportScreen * );
+    Private( ImportScreen * );
 
     Q_SLOT void on_sterolithButton_clicked()
     {
@@ -42,21 +42,21 @@ class ImportScreenPrivate : public QDialog, public VspScreenQtPrivate
 };
 VSP_DEFINE_PRIVATE( ImportScreen )
 
-ImportScreenPrivate::ImportScreenPrivate( ImportScreen * q ) :
-    VspScreenQtPrivate( q )
+ImportScreen::Private::Private( ImportScreen * q ) :
+    VspScreenQt::Private( q )
 {
     Ui.setupUi( this );
     EnableUpdateFlags();
 }
 
 ImportScreen::ImportScreen( ScreenMgr* mgr ) :
-    VspScreenQt( *new ImportScreenPrivate( this ), mgr )
+    VspScreenQt( *new ImportScreen::Private( this ), mgr )
 {
 }
 
 std::string ImportScreen::ImportFile( int type )
 {
-    Q_D( ImportScreen );
+    V_D( ImportScreen );
     std::string in_file;
     switch ( type ) {
     case IMPORT_STL:

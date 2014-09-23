@@ -11,6 +11,7 @@
 
 class MassPropScreen : public VspScreenQt
 {
+    VSP_DECLARE_PRIVATE( MassPropScreen )
 public:
     MassPropScreen( ScreenMgr* mgr );
     ~MassPropScreen();

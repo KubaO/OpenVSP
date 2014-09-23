@@ -10,7 +10,6 @@
 
 #include "VspScreenQt.h"
 
-class ParmLinkScreenPrivate;
 class ParmLinkScreen : public VspScreenQt
 {
     VSP_DECLARE_PRIVATE( ParmLinkScreen )

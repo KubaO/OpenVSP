@@ -17,9 +17,9 @@
 #include "ui_SetEditorScreen.h"
 using namespace vsp;
 
-class SetEditorScreenPrivate : public QDialog, public VspScreenQtPrivate {
+class SetEditorScreen::Private : public QDialog, public VspScreenQt::Private {
     Q_OBJECT
-    Q_DECLARE_PUBLIC( SetEditorScreen )
+    VSP_DECLARE_PUBLIC( SetEditorScreen )
     Ui::SetEditorScreen Ui;
 
     Q_SLOT void on_geomInSetBrowser_itemChanged( QListWidgetItem * item );
@@ -29,12 +29,12 @@ class SetEditorScreenPrivate : public QDialog, public VspScreenQtPrivate {
     bool Update() Q_DECL_OVERRIDE;
 
     QWidget * widget() Q_DECL_OVERRIDE { return this; }
-    SetEditorScreenPrivate( SetEditorScreen * );
+    Private( SetEditorScreen * );
 };
 VSP_DEFINE_PRIVATE( SetEditorScreen )
 
 SetEditorScreen::SetEditorScreen( ScreenMgr* mgr ) :
-    VspScreenQt( *new SetEditorScreenPrivate( this ), mgr )
+    VspScreenQt( *new SetEditorScreen::Private( this ), mgr )
 {
 }
 
@@ -42,7 +42,7 @@ SetEditorScreen::~SetEditorScreen()
 {
 }
 
-bool SetEditorScreenPrivate::Update()
+bool SetEditorScreen::Private::Update()
 {
     vector< string > set_name_vec = veh()->GetSetNameVec();
 
@@ -68,8 +68,8 @@ void SetEditorScreen::Show()
     d_func()->Ui.setBrowser->setCurrentRow( 0 );
 }
 
-SetEditorScreenPrivate::SetEditorScreenPrivate( SetEditorScreen * q ) :
-    VspScreenQtPrivate( q )
+SetEditorScreen::Private::Private( SetEditorScreen * q ) :
+    VspScreenQt::Private( q )
 {
     Ui.setupUi( this );
     /// \todo Reenable upon fixing on_highlightSetButton_clicked()
@@ -77,7 +77,7 @@ SetEditorScreenPrivate::SetEditorScreenPrivate( SetEditorScreen * q ) :
     EnableUpdateFlags();
 }
 
-void SetEditorScreenPrivate::on_geomInSetBrowser_itemChanged( QListWidgetItem * item )
+void SetEditorScreen::Private::on_geomInSetBrowser_itemChanged( QListWidgetItem * item )
 {
     Q_ASSERT( item );
     if (! Ui.setBrowser->currentItem()) return;
@@ -98,7 +98,7 @@ void SetEditorScreenPrivate::on_geomInSetBrowser_itemChanged( QListWidgetItem * 
     SetUpdateFlag();
 }
 
-void SetEditorScreenPrivate::on_setBrowser_currentItemChanged( QListWidgetItem * item )
+void SetEditorScreen::Private::on_setBrowser_currentItemChanged( QListWidgetItem * item )
 {
     if (! item) return;
     int index = item->data( Qt::UserRole ).toInt();
@@ -119,7 +119,7 @@ void SetEditorScreenPrivate::on_setBrowser_currentItemChanged( QListWidgetItem *
     }
 }
 
-void SetEditorScreenPrivate::on_setNameInput_textEdited(const QString & text)
+void SetEditorScreen::Private::on_setNameInput_textEdited(const QString & text)
 {
     string name = text.toStdString();
     QListWidgetItem * item = Ui.setBrowser->currentItem();
@@ -129,7 +129,7 @@ void SetEditorScreenPrivate::on_setNameInput_textEdited(const QString & text)
     SetUpdateFlag();
 }
 
-void SetEditorScreenPrivate::on_highlightSetButton_clicked()
+void SetEditorScreen::Private::on_highlightSetButton_clicked()
 {
     /// \todo jrg fix??
 #if 0

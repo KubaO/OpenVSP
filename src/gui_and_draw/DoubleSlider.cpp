@@ -10,8 +10,8 @@
 #include <QResizeEvent>
 #include <QDebug>
 
-class DoubleSliderPrivate {
-    Q_DECLARE_PUBLIC( DoubleSlider )
+class DoubleSlider::Private {
+    VSP_DECLARE_PUBLIC( DoubleSlider )
     DoubleSlider * const q_ptr;
     QSlider slider;
     double minimum;
@@ -19,11 +19,12 @@ class DoubleSliderPrivate {
     double span;
     double sourceSpan;
 
-    DoubleSliderPrivate( DoubleSlider * q );
+    Private( DoubleSlider * q );
     void on_valueChanged( int );
 };
+VSP_DEFINE_PRIVATE( DoubleSlider )
 
-DoubleSliderPrivate::DoubleSliderPrivate( DoubleSlider * q ) :
+DoubleSlider::Private::Private( DoubleSlider * q ) :
     q_ptr( q ),
     slider( q ),
     minimum( 0.0 ),
@@ -37,15 +38,15 @@ DoubleSliderPrivate::DoubleSliderPrivate( DoubleSlider * q ) :
     q->connect( &slider, SIGNAL( valueChanged(int) ), SLOT( on_valueChanged(int) ) );
 }
 
-void DoubleSliderPrivate::on_valueChanged( int val )
+void DoubleSlider::Private::on_valueChanged( int val )
 {
-    Q_Q( DoubleSlider );
+    V_Q( DoubleSlider );
     emit q->valueChanged( q->value() );
 }
 
 DoubleSlider::DoubleSlider( QWidget *parent ) :
     AbstractDoubleSlider( parent ),
-    d_ptr( new DoubleSliderPrivate( this ))
+    d_ptr( new DoubleSlider::Private( this ))
 {
 }
 
@@ -56,7 +57,7 @@ Qt::Orientation DoubleSlider::orientation() const
 
 void DoubleSlider::setOrientation( Qt::Orientation o )
 {
-    Q_D( DoubleSlider );
+    V_D( DoubleSlider );
     d->slider.setOrientation( o );
     setSizePolicy( d->slider.sizePolicy() );
 }
@@ -83,7 +84,7 @@ void DoubleSlider::setMaximum( double max )
 
 void DoubleSlider::setRange( double min, double max )
 {
-    Q_D( DoubleSlider );
+    V_D( DoubleSlider );
     if ( min == d->minimum && max == d->maximum ) return;
     double val = value();
     d->minimum = qMin( min, max );
@@ -94,13 +95,13 @@ void DoubleSlider::setRange( double min, double max )
 
 double DoubleSlider::value() const
 {
-    Q_D( const DoubleSlider );
+    V_D( const DoubleSlider );
     return d->minimum + d->span * d->slider.value() / d->sourceSpan;
 }
 
 void DoubleSlider::setValue( double val )
 {
-    Q_D( DoubleSlider );
+    V_D( DoubleSlider );
     val = qBound( d->minimum, val, d->maximum );
     int sourceVal = qRound( (val - d->minimum) * d->sourceSpan / d->span );
     if ( sourceVal != d->slider.value() ) {

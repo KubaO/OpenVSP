@@ -14,10 +14,10 @@
 #include "VspScreenQt_p.h"
 #include "ui_PSliceScreen.h"
 
-class PSliceScreenPrivate : public QDialog, public VspScreenQtPrivate
+class PSliceScreen::Private : public QDialog, public VspScreenQt::Private
 {
     Q_OBJECT
-    Q_DECLARE_PUBLIC( PSliceScreen )
+    VSP_DECLARE_PUBLIC( PSliceScreen )
     Q_PRIVATE_SLOT( self(), void SetUpdateFlag() )
     Ui::PSliceScreen Ui;
     int SelectedSetIndex;
@@ -33,7 +33,7 @@ class PSliceScreenPrivate : public QDialog, public VspScreenQtPrivate
     bool Update() Q_DECL_OVERRIDE;
     enum Delta { StartChanged, EndChanged };
     void check( Delta );
-    PSliceScreenPrivate( PSliceScreen * );
+    Private( PSliceScreen * );
 
     Q_SLOT void on_numSlicesSlider_valueChanged( int val )
     {
@@ -81,9 +81,10 @@ class PSliceScreenPrivate : public QDialog, public VspScreenQtPrivate
         }
     }
 };
+VSP_DEFINE_PRIVATE( PSliceScreen )
 
-PSliceScreenPrivate::PSliceScreenPrivate( PSliceScreen * q ) :
-    VspScreenQtPrivate( q )
+PSliceScreen::Private::Private( PSliceScreen * q ) :
+    VspScreenQt::Private( q )
 {
     Ui.setupUi( this );
 
@@ -111,11 +112,11 @@ PSliceScreenPrivate::PSliceScreenPrivate( PSliceScreen * q ) :
 }
 
 PSliceScreen::PSliceScreen( ScreenMgr *mgr ) :
-    VspScreenQt( *new PSliceScreenPrivate( this ), mgr )
+    VspScreenQt( *new PSliceScreen::Private( this ), mgr )
 {
 }
 
-bool PSliceScreenPrivate::Update()
+bool PSliceScreen::Private::Update()
 {
     int const decimals = 3; /* %6.3f */
     Vehicle* const veh = this->veh();
@@ -180,7 +181,7 @@ bool PSliceScreenPrivate::Update()
 }
 
 /// Check to make sure start is less than end
-void PSliceScreenPrivate::check( PSliceScreenPrivate::Delta delta )
+void PSliceScreen::Private::check( PSliceScreen::Private::Delta delta )
 {
     if ( StartVal > EndVal )
     {

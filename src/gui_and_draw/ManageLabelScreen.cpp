@@ -17,10 +17,10 @@
 #include "ui_LabelScreen.h"
 #include <string>
 
-class ManageLabelScreenPrivate : public QDialog, public VspScreenQtPrivate
+class ManageLabelScreen::Private : public QDialog, public VspScreenQt::Private
 {
     Q_OBJECT
-    Q_DECLARE_PUBLIC( ManageLabelScreen )
+    VSP_DECLARE_PUBLIC( ManageLabelScreen )
     Q_PRIVATE_SLOT( self(), void SetUpdateFlag() )
 
     Ui::LabelScreen Ui;
@@ -34,7 +34,7 @@ class ManageLabelScreenPrivate : public QDialog, public VspScreenQtPrivate
     std::vector<DrawObj> PickList;
     std::vector<std::string> Current;
 
-    ManageLabelScreenPrivate( ManageLabelScreen * q );
+    Private( ManageLabelScreen * q );
     QWidget * widget() Q_DECL_OVERRIDE { return this; }
     bool Update() Q_DECL_OVERRIDE;
     void LoadDrawObjs( const std::vector< DrawObj* > & draw_obj_vec );
@@ -151,8 +151,8 @@ class ManageLabelScreenPrivate : public QDialog, public VspScreenQtPrivate
 };
 VSP_DEFINE_PRIVATE( ManageLabelScreen )
 
-ManageLabelScreenPrivate::ManageLabelScreenPrivate( ManageLabelScreen * q ) :
-    VspScreenQtPrivate( q )
+ManageLabelScreen::Private::Private( ManageLabelScreen * q ) :
+    VspScreenQt::Private( q )
 {
     Ui.setupUi( this );
     Ui.redSlider->setColorization( Qt::red );
@@ -167,11 +167,11 @@ ManageLabelScreenPrivate::ManageLabelScreenPrivate( ManageLabelScreen * q ) :
 }
 
 ManageLabelScreen::ManageLabelScreen(ScreenMgr * mgr) :
-    VspScreenQt( *new ManageLabelScreenPrivate( this ), mgr )
+    VspScreenQt( *new ManageLabelScreen::Private( this ), mgr )
 {
 }
 
-bool ManageLabelScreenPrivate::Update()
+bool ManageLabelScreen::Private::Update()
 {
     std::vector<Label*> labels = veh()->getVGuiDraw()->getLabelMgr()->GetVec();
 
@@ -219,7 +219,7 @@ bool ManageLabelScreenPrivate::Update()
 
 void ManageLabelScreen::LoadDrawObjs( vector< DrawObj* > & draw_obj_vec )
 {
-    Q_D( ManageLabelScreen );
+    V_D( ManageLabelScreen );
     d->UpdateDrawObjs();
     for ( auto it = d->LabelList.begin(); it != d->LabelList.end(); ++it )
     {
@@ -245,7 +245,7 @@ void ManageLabelScreen::LoadDrawObjs( vector< DrawObj* > & draw_obj_vec )
 
 void ManageLabelScreen::Set(const vec3d &placement, const std::string & targetGeomId)
 {
-    Q_D( ManageLabelScreen );
+    V_D( ManageLabelScreen );
 
     if( d->Current.size() == 1 )
     {
@@ -293,7 +293,7 @@ std::string ManageLabelScreen::getFeedbackGroupName()
     return std::string("LabelGUIGroup");
 }
 
-std::string ManageLabelScreenPrivate::GenerateRuler()
+std::string ManageLabelScreen::Private::GenerateRuler()
 {
     DrawObj rulerObj;
     rulerObj.m_GeomID = veh()->getVGuiDraw()->getLabelMgr()->CreateAndAddRuler(GenerateName());
@@ -308,7 +308,7 @@ std::string ManageLabelScreenPrivate::GenerateRuler()
     return rulerObj.m_GeomID;
 }
 
-void ManageLabelScreenPrivate::RemoveRuler(const string &geomId)
+void ManageLabelScreen::Private::RemoveRuler(const string &geomId)
 {
     veh()->getVGuiDraw()->getLabelMgr()->Remove( geomId );
     for ( int i = 0; i < (int)LabelList.size(); i++ )
@@ -320,7 +320,7 @@ void ManageLabelScreenPrivate::RemoveRuler(const string &geomId)
     }
 }
 
-std::string ManageLabelScreenPrivate::GenerateName()
+std::string ManageLabelScreen::Private::GenerateName()
 {
     static unsigned int uniqueIndex = 0;
     auto name = QString("Ruler_%1").arg( uniqueIndex );
@@ -328,7 +328,7 @@ std::string ManageLabelScreenPrivate::GenerateName()
     return name.toStdString();
 }
 
-DrawObj * ManageLabelScreenPrivate::Find( const std::string & geomID )
+DrawObj * ManageLabelScreen::Private::Find( const std::string & geomID )
 {
     for ( int i = 0; i < (int)LabelList.size(); i++ )
     {
@@ -340,7 +340,7 @@ DrawObj * ManageLabelScreenPrivate::Find( const std::string & geomID )
     return NULL;
 }
 
-void ManageLabelScreenPrivate::UpdateDrawObjs()
+void ManageLabelScreen::Private::UpdateDrawObjs()
 {
     std::vector<Label*> labelList = veh()->getVGuiDraw()->getLabelMgr()->GetVec();
     for(int i = 0; i < (int)labelList.size(); i++)
@@ -411,9 +411,9 @@ void ManageLabelScreenPrivate::UpdateDrawObjs()
     }
 }
 
-void ManageLabelScreenPrivate::UpdatePickList()
+void ManageLabelScreen::Private::UpdatePickList()
 {
-    Q_Q( ManageLabelScreen );
+    V_Q( ManageLabelScreen );
     // Load all geom.
     vector< Geom* > geom_vec = veh()->FindGeomVec( veh()->GetGeomVec( false ) );
 
@@ -463,7 +463,7 @@ void ManageLabelScreenPrivate::UpdatePickList()
     }
 }
 
-void ManageLabelScreenPrivate::UpdateNameInput()
+void ManageLabelScreen::Private::UpdateNameInput()
 {
     UiSignalBlocker block( Ui.nameInput );
     if ( Current.size() > 1 )
@@ -482,14 +482,14 @@ void ManageLabelScreenPrivate::UpdateNameInput()
     }
 }
 
-void ManageLabelScreenPrivate::UpdateRulerStartDO( DrawObj * targetDO, Ruler * ruler )
+void ManageLabelScreen::Private::UpdateRulerStartDO( DrawObj * targetDO, Ruler * ruler )
 {
     targetDO->m_Ruler.Start = Ruler::MapToXYZ(
         ruler->m_OriginGeomID, 
         vec2d(ruler->m_OriginU.Get(), ruler->m_OriginW.Get()));
 }
 
-void ManageLabelScreenPrivate::UpdateRulerEndDO( DrawObj * targetDO, Ruler * ruler )
+void ManageLabelScreen::Private::UpdateRulerEndDO( DrawObj * targetDO, Ruler * ruler )
 {
     targetDO->m_Ruler.End = Ruler::MapToXYZ(
         ruler->m_RulerEndGeomID, 

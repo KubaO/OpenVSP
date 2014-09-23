@@ -10,7 +10,6 @@
 #include "VspScreenQt.h"
 #include <string>
 
-class ImportScreenPrivate;
 class ImportScreen : public VspScreenQt
 {
     VSP_DECLARE_PRIVATE( ImportScreen )

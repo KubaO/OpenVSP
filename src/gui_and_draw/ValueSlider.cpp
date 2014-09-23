@@ -7,42 +7,30 @@
 
 #include "ValueSlider.h"
 #include "DoubleSlider.h"
+#include "UiSignalBlocker.h"
 #include <QBoxLayout>
 #include <QDoubleSpinBox>
 #include <QResizeEvent>
 #include <QGraphicsColorizeEffect>
 
-class ValueSliderPrivate {
-    Q_DECLARE_PUBLIC( ValueSlider )
+class ValueSlider::Private {
+    VSP_DECLARE_PUBLIC( ValueSlider )
     ValueSlider * const q_ptr;
     QBoxLayout layout;
     QDoubleSpinBox spinbox;
     DoubleSlider slider;
     QColor colorization;
 
-    ValueSliderPrivate( ValueSlider * q );
+    Private( ValueSlider * q );
     void on_qt_slider_valueChanged( double );
     void on_qt_spinbox_valueChanged( double );
     QBoxLayout::Direction LayoutDir() {
         return slider.orientation() == Qt::Horizontal ? QBoxLayout::LeftToRight : QBoxLayout::TopToBottom;
     }
-    class SignalsBlocker {
-        Q_DISABLE_COPY( SignalsBlocker )
-        ValueSliderPrivate * const q;
-        bool blocked;
-    public:
-        SignalsBlocker( ValueSliderPrivate * q_ ) : q( q_ ) {
-            blocked = q->spinbox.blockSignals( true );
-            q->slider.blockSignals( true );
-        }
-        ~SignalsBlocker() {
-            q->spinbox.blockSignals( blocked );
-            q->slider.blockSignals( blocked );
-        }
-    };
 };
+VSP_DEFINE_PRIVATE( ValueSlider )
 
-ValueSliderPrivate::ValueSliderPrivate( ValueSlider * q ) :
+ValueSlider::Private::Private( ValueSlider * q ) :
     q_ptr( q ),
     layout( QBoxLayout::LeftToRight, q )
 {
@@ -54,25 +42,25 @@ ValueSliderPrivate::ValueSliderPrivate( ValueSlider * q ) :
     spinbox.setObjectName("qt_spinbox");
 }
 
-void ValueSliderPrivate::on_qt_slider_valueChanged( double val )
+void ValueSlider::Private::on_qt_slider_valueChanged( double val )
 {
-    Q_Q( ValueSlider );
-    SignalsBlocker block( this );
+    V_Q( ValueSlider );
+    UiSignalBlocker block( q );
     spinbox.setValue( val );
     emit q->valueChanged( val );
 }
 
-void ValueSliderPrivate::on_qt_spinbox_valueChanged( double val )
+void ValueSlider::Private::on_qt_spinbox_valueChanged( double val )
 {
-    Q_Q( ValueSlider );
-    SignalsBlocker block( this );
+    V_Q( ValueSlider );
+    UiSignalBlocker block( q );
     slider.setValue( val );
     emit q->valueChanged( val );
 }
 
 ValueSlider::ValueSlider( QWidget *parent ) :
     AbstractDoubleSlider( parent ),
-    d_ptr( new ValueSliderPrivate( this ))
+    d_ptr( new ValueSlider::Private( this ))
 {
     setRange( 0.0, 1.0 );
     QMetaObject::connectSlotsByName( this );
@@ -85,7 +73,7 @@ Qt::Orientation ValueSlider::orientation() const
 
 void ValueSlider::setOrientation( Qt::Orientation o )
 {
-    Q_D( ValueSlider );
+    V_D( ValueSlider );
     d->slider.setOrientation( o );
     d->layout.setDirection( d->LayoutDir() );
 }
@@ -112,8 +100,8 @@ void ValueSlider::setMaximum( double max )
 
 void ValueSlider::setRange( double min, double max )
 {
-    Q_D( ValueSlider );
-    ValueSliderPrivate::SignalsBlocker block( d );
+    V_D( ValueSlider );
+    UiSignalBlocker block( this );
     d->slider.setRange( min, max );
     d->spinbox.setRange( min, max );
 }
@@ -145,7 +133,7 @@ QColor ValueSlider::colorization() const
 
 void ValueSlider::setColorization( const QColor & color )
 {
-    Q_D( ValueSlider );
+    V_D( ValueSlider );
     d->colorization = color;
     if ( color.isValid() ) {
         auto fx = new QGraphicsColorizeEffect();
@@ -158,14 +146,14 @@ void ValueSlider::setColorization( const QColor & color )
 
 double ValueSlider::value() const
 {
-    Q_D( const ValueSlider );
+    V_D( const ValueSlider );
     return d->slider.value();
 }
 
 void ValueSlider::setValue( double val )
 {
-    Q_D( ValueSlider );
-    ValueSliderPrivate::SignalsBlocker block( d );
+    V_D( ValueSlider );
+    UiSignalBlocker block( this );
     d->slider.setValue( val );
     d->spinbox.setValue( val );
 }

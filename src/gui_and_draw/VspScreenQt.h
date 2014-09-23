@@ -14,7 +14,6 @@
 #include "VspObj.h"
 #include <QScopedPointer>
 
-class VspScreenQtPrivate;
 class VspScreenQt : public VspScreen
 {
     Q_DISABLE_COPY( VspScreenQt )
@@ -36,8 +35,8 @@ public:
     virtual void position( int X, int Y ) Q_DECL_OVERRIDE;
 
 protected:
-    QScopedPointer<VspScreenQtPrivate> const d_ptr;
-    VspScreenQt( VspScreenQtPrivate & dd, ScreenMgr * mgr );
+    QScopedPointer< Private > const d_ptr;
+    VspScreenQt( Private & dd, ScreenMgr * mgr );
 };
 
 #endif // VSPSCREENQT__INCLUDED_
