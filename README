@@ -48,6 +48,36 @@ STATE OF THE CODE
   The parenthesized phrase is to be translated into Latin and concatenated to
   a single word. It is a selenological feature.
 
+ROADMAP EXCERPTS
+
+  Short-term porting plan is:
+
+  1. Port the main window. This is the lowest hanging fruit at the moment.
+
+  2. Reimplement the GroupLayout along with porting remaining GuiDevices and screens.
+
+  Mid-term, some modularization work is envisioned, with interfaces and ability to have
+  a number of objects implementing a given interface all being seen by the interface
+  consumer (e.g. we'd have IGeom, IGeomUi).
+
+  Long-term, the minimum required version of Qt will be 5.4. This is because:
+
+  1. The OpenGL implementation is runtime selectable in 5.4. On Windows, a modern
+  OpenGL ES 2 implementation that runs on top of DirectX is provided through ANGLE.
+
+  2. The QOpenGLWidget seems to be the way forward, esp. for interop with QML.
+
+  The targeted OpenGL will have to be ES 2.0, since that's what's available on mobile
+  devices, and mobile devices are our target. ANGLE implements OpenGL ES only.
+  Since ANGLE gives a modern OpenGL ES on top of modern DirectX - the users
+  won't have to worry about needing an OpenGL driver. Even though Qt is intelligent
+  in its choice of a driver (a higher-level native driver will win over ANGLE),
+  a power user can always override the selection through a commandline argument,
+  handled by the Qt library itself.
+
+  Since Qt 5.4 targets WinRT, we can then support Metro, er, Modern on both Desktop
+  and Mobile Windows.
+
 DEPENDENCIES
 
   OpenVSP relies on a variety of libraries and code made available by
@@ -97,14 +127,17 @@ DEPENDENCIES
    and other scripting languages.
 
   -Python (www.python.org) Scripting language.  Optional dependency
-   required if building Python API module.
+   required if building the Python API module.
 
   -Doxygen (www.doxygen.org) Documentation generator.  Optional
    dependency used for generating documentation from the source.  Can
    also utilize graphviz dot to generate improved figures in the
    documentation. (www.graphviz.org)
 
-  -Qt 5 (www.qt-project.org) An application development framework.
+   The current man-made documentation is next to nonexistent, so
+   all you can reasonably expect is doxygen's machine-generated content.
+
+  -Qt 5.3 or newer (www.qt-project.org) An application development framework.
 
   3) Bundled with OpenVSP, but system libraries may substitute.
 
@@ -130,6 +163,11 @@ DEPENDENCIES
   -CMinpack (http://devernay.free.fr/hacks/cminpack/) C/C++ port of
    standard Fortran Levenberg-Marquardt implementation.
 
+  -GLM (glm.g-truc.net) OpenGL math library.  GRAPHICS_ONLY
+
+  The requirements below are only necessary until the completion of
+  Qt port, and thus are short-term.
+
   -FLTK (www.fltk.org) Cross-platform windowing library.  FLTK should
    be available as a standard package on most Linux systems and can
    be installed from source on Windows and Mac OS X according to the
@@ -139,8 +177,6 @@ DEPENDENCIES
    piggy-back on the libjpeg accompanying FLTK.  If you prefer to use
    your own, it is typically pre-installed on Linux.  You will need
    to build it yourself for MacOS or Windows.  GRAPHICS_ONLY
-
-  -GLM (glm.g-truc.net) OpenGL math library.  GRAPHICS_ONLY
 
   -GLEW (glew.sourceforge.net) OpenGL Extension Wrangler Library.  This
    library is used to access any modern OpenGL features.  GRAPHICS_ONLY
@@ -173,10 +209,10 @@ DEPENDENCIES
      jgt.akpeters.com/papers/Moller97/tritri.html
      jgt.akpeters.com/papers/MollerTrumbore97/code.html
 
-   Tomas Mšller, Ben Trumbore, "Fast, Minimum Storage Ray-Triangle
+   Tomas MÃ¶ller, Ben Trumbore, "Fast, Minimum Storage Ray-Triangle
      Intersection", Journal of Graphics Tools, Vol. 2, Iss. 1, 1997.
 
-   Tomas Mšller, "A Fast Triangle-Triangle Intersection Test", Journal
+   Tomas MÃ¶ller, "A Fast Triangle-Triangle Intersection Test", Journal
      of Graphics Tools, Vol. 2, Iss. 2, 1997.
 
   -glFont2 by Brad Fish (students.cs.byu.edu/~bfish/glfont2.php)
