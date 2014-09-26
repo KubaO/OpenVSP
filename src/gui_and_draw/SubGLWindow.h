@@ -35,6 +35,7 @@ public:
     virtual void setZoomValue( float value );
 
     VSPGraphic::GraphicEngine * getGraphicEngine();
+    void makeCurrent();
 protected:
     QSize minimumSizeHint() const Q_DECL_OVERRIDE;
     void initializeGL() Q_DECL_OVERRIDE;

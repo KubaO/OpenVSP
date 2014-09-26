@@ -19,6 +19,7 @@
 #include <cassert>
 
 using namespace VSPGraphic;
+void fl_no_gl_context();
 
 namespace VSPGUI
 {
@@ -62,6 +63,15 @@ VspSubGlWindow::Private::Private( VspSubGlWindow * q, DrawObj::ScreenEnum screen
 
     // Enable grid.
     viewport->showGridOverlay( true );
+}
+
+void VspSubGlWindow::makeCurrent()
+{
+    // FLTK workaround: FLTK assumes that it "owns" the OpenGL context.
+    // This implementation-speicific call clears the context cache and unmaps
+    // the default context of the main window.
+    fl_no_gl_context();
+    QGLWidget::makeCurrent();
 }
 
 VspSubGlWindow::VspSubGlWindow( DrawObj::ScreenEnum drawObjScreen, QWidget * parent ) :
