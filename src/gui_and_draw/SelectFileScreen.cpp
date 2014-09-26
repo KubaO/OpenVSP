@@ -91,12 +91,11 @@ string SelectFileScreen::Private::FileChooser( const char* title, const char* fi
     if (Window.result() == QDialog::Accepted)
     {
         SaveFavorites();
-    }
-
-    QStringList const files = Window.selectedFiles();
-    if (! files.isEmpty() )
-    {
-        file_name = files.first().toStdString();
+        QStringList const files = Window.selectedFiles();
+        if (! files.isEmpty() )
+        {
+            file_name = files.first().toStdString();
+        }
     }
     return file_name;
 }
