@@ -5,6 +5,8 @@
 
 #include <vector>
 
+class QPoint;
+
 namespace VSPGraphic
 {
 class Scene;
@@ -34,12 +36,14 @@ public:
     * x and y are current mouse location.
     */
     void predraw( Scene * scene, int x, int y );
+    void predraw( Scene * scene, const QPoint & );
 
     /*!
     * Draw Scene.
     * x and y are current mouse location.
     */
     void draw( Scene * scene, int x, int y );
+    void draw( Scene * scene, const QPoint & );
 
     /*!
     * Set Display Layout.
@@ -112,6 +116,7 @@ public:
     * Select Viewport at x, y mouse location.
     */
     void selectViewport( int x, int y );
+    void selectViewport( const QPoint & );
 
 public:
     /*
@@ -132,6 +137,7 @@ public:
     * cx, cy - Current xy mouse location.
     */
     virtual void rotate( int px, int py, int cx, int cy );
+    virtual void rotate( const QPoint & p, const QPoint & c );
 
     /*!
     * Pan the scene.
@@ -140,6 +146,7 @@ public:
     * cx, cy - Current xy mouse location.
     */
     virtual void pan( int px, int py, int cx, int cy );
+    virtual void pan( const QPoint & p, const QPoint & c );
 
     /*!
     * Pan the scene.
@@ -156,6 +163,7 @@ public:
     * cx, cy - Current xy mouse location.
     */
     virtual void zoom( int px, int py, int cx, int cy );
+    virtual void zoom( const QPoint & p, const QPoint & c );
 
     /*!
     * Zoom in or out scene.

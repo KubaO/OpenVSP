@@ -112,7 +112,7 @@ MainVSPScreen::MainVSPScreen( ScreenMgr* mgr ) : VspScreenFLTK( mgr )
     //==== Add Gl Window to Main Window ====//
     Fl_Widget* w = m_MainUI->GlWinGroup;
     m_MainUI->GlWinGroup->begin();
-    m_GlWin = new VspGlWindow( w->x(), w->y(), w->w(), w->h(), mgr, DrawObj::VSP_MAIN_SCREEN );
+    m_GlWin = new VspGlWindow( mgr, DrawObj::VSP_MAIN_SCREEN );
     m_MainUI->GlWinGroup->end();
 
     SetFileLabel( VehicleMgr.GetVehicle()->GetVSP3FileName() );
@@ -178,29 +178,21 @@ void MainVSPScreen::MenuCallBack( Fl_Widget *w )
     if ( m == m_MainUI->OneScreenMenu )
     {
         m_GlWin->setWindowLayout( 1, 1 );
-        m_GlWin->redraw();
-
         m_ScreenMgr->SetUpdateFlag( true );
     }
     else if ( m == m_MainUI->FourScreenMenu )
     {
         m_GlWin->setWindowLayout( 2, 2 );
-        m_GlWin->redraw();
-
         m_ScreenMgr->SetUpdateFlag( true );
     }
     else if ( m == m_MainUI->TwoHorzScreenMenu )
     {
         m_GlWin->setWindowLayout( 1, 2 );
-        m_GlWin->redraw();
-
         m_ScreenMgr->SetUpdateFlag( true );
     }
     else if ( m == m_MainUI->TwoVertScreenMenu )
     {
         m_GlWin->setWindowLayout( 2, 1 );
-        m_GlWin->redraw();
-
         m_ScreenMgr->SetUpdateFlag( true );
     }
     else if ( m == m_MainUI->ScreenShotMenu )

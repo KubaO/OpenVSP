@@ -36,6 +36,11 @@
 #include "Clipping.h"
 #include "BndBox.h"
 
+#include <QWindow>
+#include <QMouseEvent>
+#include <QKeyEvent>
+#include <QGuiApplication>
+
 #define PRECISION_PAN_SPEED 0.005f
 #define PAN_SPEED 0.025f
 #define PRECISION_ZOOM_SPEED 0.00005f
@@ -47,190 +52,207 @@ using namespace VSPGraphic;
 
 namespace VSPGUI
 {
-VspGlWindow::VspGlWindow( int x, int y, int w, int h, ScreenMgr * mgr, DrawObj::ScreenEnum drawObjScreen )
-    : Fl_Gl_Window( x, y, w, h, "VSP GL Window" )
+
+class VspGlWindow::Private
 {
-    mode( FL_RGB | FL_ALPHA | FL_DEPTH | FL_DOUBLE | FL_MULTISAMPLE );
-    m_GEngine = new VSPGraphic::GraphicEngine();
+    VSP_DECLARE_PUBLIC( VspGlWindow )
 
-    m_ScreenMgr = mgr;
+    Private( ScreenMgr * mgr, DrawObj::ScreenEnum drawObj, VspGlWindow * q );
 
-    // Link this GUI to one of drawObj screen.
-    m_LinkedScreen = drawObjScreen;
+    void initGLEW();
+
+    void updateTextures( DrawObj * drawObj );
+
+    void loadTrisData( VSPGraphic::Renderable * destObj, DrawObj * drawObj );
+    void loadXSecData( VSPGraphic::Renderable * destObj, DrawObj * drawObj );
+    void loadMarkData( VSPGraphic::Renderable * destObj, DrawObj * drawObj );
+
+    void update( std::vector<DrawObj *> objects );
+
+    void setLighting( DrawObj * drawObj );
+
+    void setClipping( DrawObj * drawObj );
+
+    struct ID;
+
+    ID * findID( std::string geomID );
+    ID * findID( unsigned int bufferID );
+
+    void updateBuffer( std::vector<DrawObj *> objects );
+
+    void sendFeedback( VSPGraphic::Selectable * selected );
+    void sendFeedback( std::vector<VSPGraphic::Selectable *> listOfSelected );
+
+    std::vector<std::vector<vec3d>> generateTexCoordFromXSec( DrawObj * drawObj );
+    double distance( vec3d pointA, vec3d pointB );
+
+    VSPGraphic::Viewport * viewport() { return display()->getViewport(); }
+    VSPGraphic::Display * display() { return gEngine.getDisplay(); }
+    VSPGraphic::Scene * scene() { return gEngine.getScene(); }
+    VspScreen * getScreen( int id ) { return screenMgr->GetScreen( id ); }
+    void updateMouse();
+
+    VspGlWindow * const q_ptr;
+    ScreenMgr * screenMgr;
+    DrawObj::ScreenEnum linkedScreen;
+    VSPGraphic::GraphicEngine gEngine;
+    bool initialized;
+
+    struct TextureID
+    {
+        unsigned int bufferTexID;
+        std::string geomTexID;
+    };
+    struct ID
+    {
+        unsigned int bufferID;
+        std::string geomID;
+        std::vector<TextureID> textureIDs;
+
+        ID() {}
+        ID( unsigned int bID, const std::string gID ) : bufferID( bID ), geomID( gID ) {}
+
+        TextureID * find( std::string geomTexID )
+        {
+            for( int i = 0; i < ( int )textureIDs.size(); i++ )
+            {
+                if( textureIDs[i].geomTexID == geomTexID )
+                {
+                    return &textureIDs[i];
+                }
+            }
+            return NULL;
+        }
+    };
+    std::vector<ID> ids;
+
+    float lightAmb;
+    float lightDiff;
+    float lightSpec;
+
+    QPoint mouse; ///< Last mouse event cooordinate with origin in the lower left corner.
+    QPoint prevLB;
+    QPoint prevMB;
+    QPoint prevRB;
+    QPoint prevAltLB;
+    QPoint prevCtrlLB;
+    QPoint prevMetaLB;
+    QPoint prevLBRB;
+};
+VSP_DEFINE_PRIVATE( VspGlWindow )
+
+VspGlWindow::Private::Private( ScreenMgr * mgr, DrawObj::ScreenEnum drawObjScreen, VspGlWindow * q ) :
+    q_ptr( q ),
+    screenMgr( mgr ),
+    linkedScreen( drawObjScreen ), // Link this GUI to one of drawObj screens.
+    initialized( false ),
+    lightAmb( 0.5f ),
+    lightSpec( 0.5f ),
+    lightDiff( 0.5f )
+{
+    QGLFormat fmt( QGL::Rgba | QGL::AlphaChannel | QGL::DepthBuffer | QGL::DoubleBuffer | QGL::SampleBuffers );
+    q->setFormat( fmt );
+    q->setCursor( Qt::CrossCursor );
+    q->setMouseTracking( true );
 
     // One Screen
-    m_GEngine->getDisplay()->setDisplayLayout( 1, 1 );
-    m_GEngine->getDisplay()->selectViewport( 0 );
-
-    m_LightAmb = m_LightSpec = m_LightDiff = 0.5f;
-    m_mouse_x = m_mouse_y = 0xFFFFFFF;
-
-    m_initialized = false;
-
-    m_prevLB = m_prevRB = m_prevMB = glm::vec2( 0xFFFFFFFF );
-    m_prevAltLB = m_prevCtrlLB = m_prevMetaLB = glm::vec2( 0xFFFFFFFF );
-    m_prevLBRB = glm::vec2( 0xFFFFFFFF );
-
-    m_ScreenMgr = mgr;
+    display()->setDisplayLayout( 1, 1 );
+    display()->selectViewport( 0 );
 }
-VspGlWindow::~VspGlWindow()
+
+VspGlWindow::VspGlWindow( ScreenMgr * mgr, DrawObj::ScreenEnum drawObjScreen, QWidget *parent ) :
+    QGLWidget( parent ),
+    d_ptr( new Private( mgr, drawObjScreen, this ) )
+{}
+
+VSPGraphic::GraphicEngine * VspGlWindow::getGraphicEngine()
 {
-    delete m_GEngine;
+    return &d_func()->gEngine;
+}
+
+void VspGlWindow::Private::updateMouse()
+{
+    V_Q( VspGlWindow );
+    auto screen = q->window()->windowHandle()->screen();
+    auto pos = q->mapFromGlobal( QCursor::pos( screen ) );
+    pos.setY( q->height() - pos.y() );
+    mouse = pos;
 }
 
 void VspGlWindow::setWindowLayout( int row, int column )
 {
-    m_GEngine->getDisplay()->setDisplayLayout( row, column );
-    m_GEngine->getDisplay()->resize( w(), h() );
-    m_GEngine->getDisplay()->selectViewport( 0 );
+    V_D( VspGlWindow );
+    d->display()->setDisplayLayout( row, column );
+    d->display()->resize( width(), height() );
+    d->display()->selectViewport( 0 );
+    QGLWidget::update();
 }
 
 void VspGlWindow::setView( VSPGraphic::Common::VSPenum type )
 {
-    m_GEngine->getDisplay()->changeView( type );
+    d_func()->display()->changeView( type );
 }
 
 void VspGlWindow::pan( int dx, int dy, bool precisionOn )
 {
-    float x = 0;
-    float y = 0;
+    auto speed = precisionOn ? PRECISION_PAN_SPEED : PAN_SPEED;
+    float x = 0.0;
+    float y = 0.0;
 
-    if( precisionOn )
+    if( dx != 0 )
     {
-        if( dx != 0 )
-        {
-            x = PRECISION_PAN_SPEED * ( dx < 0 ? -1 : 1 );
-        }
-
-        if( dy != 0 )
-        {
-            y = PRECISION_PAN_SPEED * ( dy < 0 ? -1 : 1 );
-        }
+        x = speed * ( dx < 0 ? -1 : 1 );
     }
-    else
+    if( dy != 0 )
     {
-        if( dx != 0 )
-        {
-            x = PAN_SPEED * ( dx < 0 ? -1 : 1 );
-        }
-
-        if( dy != 0 )
-        {
-            y = PAN_SPEED * ( dy < 0 ? -1 : 1 );
-        }
+        y = speed * ( dy < 0 ? -1 : 1 );
     }
-    m_GEngine->getDisplay()->pan( x, y );
+    d_func()->display()->pan( x, y );
 }
 
 void VspGlWindow::zoom( int delta, bool precisionOn )
 {
+    auto speed = precisionOn ? PRECISION_ZOOM_SPEED : ZOOM_SPEED;
     float zoomvalue = 0;
 
     if( delta != 0 )
     {
-        if( precisionOn )
-        {
-            zoomvalue = PRECISION_ZOOM_SPEED * ( delta < 0 ? -1 : 1 );
-        }
-        else
-        {
-            zoomvalue = ZOOM_SPEED * ( delta < 0 ? -1 : 1 );
-        }
+        zoomvalue = speed * ( delta < 0 ? -1 : 1 );
     }
-    m_GEngine->getDisplay()->zoom( zoomvalue );
+    d_func()->display()->zoom( zoomvalue );
 }
 
-void VspGlWindow::show()
+void VspGlWindow::initializeGL()
 {
-    Fl_Gl_Window::show();
-
-    // Initialize Glew when context is created.
-    _initGLEW();
+    d_func()->initGLEW();
 }
 
-void VspGlWindow::draw()
+void VspGlWindow::paintGL()
 {
-    make_current();
-    if ( !valid() )
-    {
-        m_GEngine->getDisplay()->resize( w(), h() );
-    }
-
-    m_GEngine->draw( m_mouse_x, m_mouse_y );
+    V_D( VspGlWindow );
+    d->gEngine.draw( d->mouse.x(), d->mouse.y() );
 }
 
-int VspGlWindow::handle( int fl_event )
+void VspGlWindow::resizeGL( int w, int h )
 {
-    // Move origin from upper left corner to lower left corner.
-    int x = Fl::event_x();
-    int y = h() - Fl::event_y();
-
-    m_mouse_x = x;
-    m_mouse_y = y;
-
-    switch( fl_event )
-    {
-    case FL_ENTER:
-        cursor( FL_CURSOR_CROSS );
-        return 1;
-
-    case FL_LEAVE:
-        cursor( FL_CURSOR_DEFAULT );
-        return 1;
-
-    case FL_PUSH:
-        OnPush( x, y );
-        return 1;
-
-    case FL_DRAG:
-        OnDrag( x, y );
-        return 1;
-
-    case FL_RELEASE:
-        OnRelease( x, y );
-        return 1;
-
-    case FL_MOUSEWHEEL:
-        return 1;
-
-    case FL_MOVE:
-        if( m_GEngine->getScene()->isPickingEnabled() )
-        {
-            redraw();
-        }
-        return 1;
-
-    case FL_KEYDOWN:
-        OnKeydown();
-        return 1;
-
-    case FL_KEYUP:
-        OnKeyup( x, y );
-        return 1;
-
-    case FL_FOCUS:
-        return 1;
-
-    case FL_UNFOCUS:
-        return 1;
-    }
-    return Fl_Gl_Window::handle( fl_event );
+    d_func()->display()->resize( w, h );
 }
 
 void VspGlWindow::update()
 {
+    V_D( VspGlWindow );
     Vehicle* vPtr = VehicleMgr.GetVehicle();
 
     if ( vPtr )
     {
-        make_current();
+        makeCurrent();
 
         // Get Render Objects from Vehicle.
         vector<DrawObj *> drawObjs = vPtr->GetDrawObjs();
 
         // Load Render Objects from CfdMeshScreen.
         CfdMeshScreen * cfdScreen = dynamic_cast< CfdMeshScreen* >
-            ( m_ScreenMgr->GetScreen( ScreenMgr::VSP_CFD_MESH_SCREEN ) );
+            ( d->getScreen( ScreenMgr::VSP_CFD_MESH_SCREEN ) );
         if( cfdScreen )
         {
             cfdScreen->LoadDrawObjs( drawObjs );
@@ -238,7 +260,7 @@ void VspGlWindow::update()
 
         // Load Render Objects from labelScreen.
         ManageLabelScreen * labelScreen = dynamic_cast< ManageLabelScreen* >
-            ( m_ScreenMgr->GetScreen( ScreenMgr::VSP_LABEL_SCREEN ) );
+            ( d->getScreen( ScreenMgr::VSP_LABEL_SCREEN ) );
         if( labelScreen )
         {
             labelScreen->LoadDrawObjs( drawObjs );
@@ -246,7 +268,7 @@ void VspGlWindow::update()
 
         // Load Render Objects from lightScreen.
         ManageLightingScreen * lightScreen = dynamic_cast< ManageLightingScreen* >
-            ( m_ScreenMgr->GetScreen( ScreenMgr::VSP_LIGHTING_SCREEN ) );
+            ( d->getScreen( ScreenMgr::VSP_LIGHTING_SCREEN ) );
         if( lightScreen )
         {
             lightScreen->LoadDrawObjs( drawObjs );
@@ -254,7 +276,7 @@ void VspGlWindow::update()
 
         // Load Render Objects from geomScreen.
         ManageGeomScreen * geomScreen = dynamic_cast< ManageGeomScreen* >
-            ( m_ScreenMgr->GetScreen( ScreenMgr::VSP_MANAGE_GEOM_SCREEN ) );
+            ( d->getScreen( ScreenMgr::VSP_MANAGE_GEOM_SCREEN ) );
         if( geomScreen )
         {
             geomScreen->LoadDrawObjs( drawObjs );
@@ -262,7 +284,7 @@ void VspGlWindow::update()
 
         // Load Render Objects from corScreen ( Center of Rotation ).
         ManageCORScreen * corScreen = dynamic_cast< ManageCORScreen* >
-            ( m_ScreenMgr->GetScreen( ScreenMgr::VSP_COR_SCREEN ) );
+            ( d->getScreen( ScreenMgr::VSP_COR_SCREEN ) );
         if( corScreen )
         {
             corScreen->LoadDrawObjs( drawObjs );
@@ -270,14 +292,14 @@ void VspGlWindow::update()
 
         // Load Render Objects from clipScreen ( Clipping ).
         ClippingScreen * clipScreen = dynamic_cast< ClippingScreen* >
-            ( m_ScreenMgr->GetScreen( ScreenMgr::VSP_CLIPPING_SCREEN ) );
+            ( d->getScreen( ScreenMgr::VSP_CLIPPING_SCREEN ) );
         if( clipScreen )
         {
             clipScreen->LoadDrawObjs( drawObjs );
         }
 
         // Load Objects to Renderer.
-        _update( drawObjs );
+        d->update( drawObjs );
 
         // Once updated data is stored in buffer, 
         // reset geometry changed flag to false.
@@ -285,27 +307,26 @@ void VspGlWindow::update()
     }
 }
 
-void VspGlWindow::_initGLEW()
+void VspGlWindow::Private::initGLEW()
 {
-    if( !m_initialized )
+    if( !initialized )
     {
-        make_current();
+        q_func()->makeCurrent();
         VSPGraphic::GraphicEngine::initGlew();
-
-        m_initialized = true;
+        initialized = true;
     }
 }
 
-void VspGlWindow::_update( std::vector<DrawObj *> objects )
+void VspGlWindow::Private::update( std::vector<DrawObj *> objects )
 {
     // Check for changes in DrawObjs and adjust accordingly.
-    _updateBuffer( objects );
+    updateBuffer( objects );
 
     // Process all geometry renderable first, then all labels, pickables, lastly the markers.  Order matters.
     for( int i = 0; i < (int)objects.size(); i++ )
     {
         // If this DrawObj is aimed for other screen, ignore.
-        if( objects[i]->m_Screen != m_LinkedScreen )
+        if( objects[i]->m_Screen != linkedScreen )
         {
             continue;
         }
@@ -321,7 +342,7 @@ void VspGlWindow::_update( std::vector<DrawObj *> objects )
         lineWidth = ( float )objects[i]->m_LineWidth;
 
         unsigned int id;
-        ID * idPtr = _findID( objects[i]->m_GeomID );
+        ID * idPtr = findID( objects[i]->m_GeomID );
         if( idPtr )
         {
             id = idPtr->bufferID;
@@ -337,27 +358,23 @@ void VspGlWindow::_update( std::vector<DrawObj *> objects )
         switch( objects[i]->m_Type )
         {
         case DrawObj::VSP_SETTING:
-            _setLighting( objects[i] );
+            setLighting( objects[i] );
             break;
 
         case DrawObj::VSP_CLIP:
-            _setClipping( objects[i] );
+            setClipping( objects[i] );
             break;
 
         case DrawObj::VSP_POINTS:
             // Create new scene object if needed.
             if( id == 0xFFFFFFFF )
             {
-                m_GEngine->getScene()->createObject( Common::VSP_OBJECT_MARKER, &id );
-
-                ID idInfo;
-                idInfo.bufferID = id;
-                idInfo.geomID = objects[i]->m_GeomID;
-                m_ids.push_back( idInfo );
+                scene()->createObject( Common::VSP_OBJECT_MARKER, &id );
+                ids.push_back( ID( id, objects[i]->m_GeomID ) );
             }
 
             // Update scene object.
-            rObj = dynamic_cast<Renderable*> ( m_GEngine->getScene()->getObject( id ) );
+            rObj = dynamic_cast<Renderable*> ( scene()->getObject( id ) );
             if( rObj )
             {
                 rObj->setVisibility( objects[i]->m_Visible );
@@ -369,7 +386,7 @@ void VspGlWindow::_update( std::vector<DrawObj *> objects )
                 // Update buffer data if needed.
                 if( objects[i]->m_GeomChanged )
                 {
-                    _loadMarkData( rObj, objects[i] );
+                    loadMarkData( rObj, objects[i] );
                 }
             }
             break;
@@ -377,15 +394,11 @@ void VspGlWindow::_update( std::vector<DrawObj *> objects )
         case DrawObj::VSP_LINES:
             if( id == 0xFFFFFFFF )
             {
-                m_GEngine->getScene()->createObject( Common::VSP_OBJECT_MARKER, &id );
-
-                ID idInfo;
-                idInfo.bufferID = id;
-                idInfo.geomID = objects[i]->m_GeomID;
-                m_ids.push_back( idInfo );
+                scene()->createObject( Common::VSP_OBJECT_MARKER, &id );
+                ids.push_back( ID( id, objects[i]->m_GeomID ) );
             }
 
-            rObj = dynamic_cast<Renderable*> ( m_GEngine->getScene()->getObject( id ) );
+            rObj = dynamic_cast<Renderable*> ( scene()->getObject( id ) );
             if( rObj )
             {
                 rObj->setVisibility( objects[i]->m_Visible );
@@ -395,7 +408,7 @@ void VspGlWindow::_update( std::vector<DrawObj *> objects )
 
                 if( objects[i]->m_GeomChanged )
                 {
-                    _loadMarkData( rObj, objects[i] );
+                    loadMarkData( rObj, objects[i] );
                 }
             }
             break;
@@ -403,14 +416,10 @@ void VspGlWindow::_update( std::vector<DrawObj *> objects )
         case DrawObj::VSP_LINE_LOOP:
             if( id == 0xFFFFFFFF )
             {
-                m_GEngine->getScene()->createObject( Common::VSP_OBJECT_MARKER, &id );
-
-                ID idInfo;
-                idInfo.bufferID = id;
-                idInfo.geomID = objects[i]->m_GeomID;
-                m_ids.push_back( idInfo );
+                scene()->createObject( Common::VSP_OBJECT_MARKER, &id );
+                ids.push_back( ID( id, objects[i]->m_GeomID ) );
             }
-            rObj = dynamic_cast<Renderable*> ( m_GEngine->getScene()->getObject( id ) );
+            rObj = dynamic_cast<Renderable*> ( scene()->getObject( id ) );
             if( rObj )
             {
                 rObj->setVisibility( objects[i]->m_Visible );
@@ -420,7 +429,7 @@ void VspGlWindow::_update( std::vector<DrawObj *> objects )
 
                 if( objects[i]->m_GeomChanged )
                 {
-                    _loadMarkData( rObj, objects[i] );
+                    loadMarkData( rObj, objects[i] );
                 }
             }
             break;
@@ -428,14 +437,10 @@ void VspGlWindow::_update( std::vector<DrawObj *> objects )
         case DrawObj::VSP_LINE_STRIP:
             if( id == 0xFFFFFFFF )
             {
-                m_GEngine->getScene()->createObject( Common::VSP_OBJECT_MARKER, &id );
-
-                ID idInfo;
-                idInfo.bufferID = id;
-                idInfo.geomID = objects[i]->m_GeomID;
-                m_ids.push_back( idInfo );
+                scene()->createObject( Common::VSP_OBJECT_MARKER, &id );
+                ids.push_back( ID( id, objects[i]->m_GeomID ) );
             }
-            rObj = dynamic_cast<Renderable*> ( m_GEngine->getScene()->getObject( id ) );
+            rObj = dynamic_cast<Renderable*> ( scene()->getObject( id ) );
             if( rObj )
             {
                 rObj->setVisibility( objects[i]->m_Visible );
@@ -445,7 +450,7 @@ void VspGlWindow::_update( std::vector<DrawObj *> objects )
 
                 if( objects[i]->m_GeomChanged )
                 {
-                    _loadMarkData( rObj, objects[i] );
+                    loadMarkData( rObj, objects[i] );
                 }
             }
             break;
@@ -454,14 +459,10 @@ void VspGlWindow::_update( std::vector<DrawObj *> objects )
             // Create new scene object if needed.
             if( id == 0xFFFFFFFF )
             {
-                m_GEngine->getScene()->createObject( Common::VSP_OBJECT_XSEC_ENTITY, &id );
-
-                ID idInfo;
-                idInfo.bufferID = id;
-                idInfo.geomID = objects[i]->m_GeomID;
-                m_ids.push_back( idInfo );
+                scene()->createObject( Common::VSP_OBJECT_XSEC_ENTITY, &id );
+                ids.push_back( ID( id, objects[i]->m_GeomID ) );
             }
-            eObj = dynamic_cast<VSPGraphic::Entity*> ( m_GEngine->getScene()->getObject( id ) );
+            eObj = dynamic_cast<VSPGraphic::Entity*> ( scene()->getObject( id ) );
             if( eObj )
             {
                 // Update scene object.
@@ -477,7 +478,7 @@ void VspGlWindow::_update( std::vector<DrawObj *> objects )
 
                 if( objects[i]->m_GeomChanged )
                 {
-                    _loadXSecData( eObj, objects[i] );
+                    loadXSecData( eObj, objects[i] );
                 }
             }
             break;
@@ -485,14 +486,10 @@ void VspGlWindow::_update( std::vector<DrawObj *> objects )
         case DrawObj::VSP_WIRE_TRIS:
             if( id == 0xFFFFFFFF )
             {
-                m_GEngine->getScene()->createObject( Common::VSP_OBJECT_ENTITY, &id );
-
-                ID idInfo;
-                idInfo.bufferID = id;
-                idInfo.geomID = objects[i]->m_GeomID;
-                m_ids.push_back( idInfo );
+                scene()->createObject( Common::VSP_OBJECT_ENTITY, &id );
+                ids.push_back( ID( id, objects[i]->m_GeomID ) );
             }
-            eObj = dynamic_cast<VSPGraphic::Entity*> ( m_GEngine->getScene()->getObject( id ) );
+            eObj = dynamic_cast<VSPGraphic::Entity*> ( scene()->getObject( id ) );
             if( eObj )
             {
                 eObj->setVisibility( objects[i]->m_Visible );
@@ -507,7 +504,7 @@ void VspGlWindow::_update( std::vector<DrawObj *> objects )
 
                 if( objects[i]->m_GeomChanged )
                 {
-                    _loadTrisData( eObj, objects[i] );
+                    loadTrisData( eObj, objects[i] );
                 }
             }
             break;
@@ -515,14 +512,10 @@ void VspGlWindow::_update( std::vector<DrawObj *> objects )
         case DrawObj::VSP_HIDDEN_MESH:
             if( id == 0xFFFFFFFF )
             {
-                m_GEngine->getScene()->createObject( Common::VSP_OBJECT_XSEC_ENTITY, &id );
-
-                ID idInfo;
-                idInfo.bufferID = id;
-                idInfo.geomID = objects[i]->m_GeomID;
-                m_ids.push_back( idInfo );
+                scene()->createObject( Common::VSP_OBJECT_XSEC_ENTITY, &id );
+                ids.push_back( ID( id, objects[i]->m_GeomID ) );
             }
-            eObj = dynamic_cast<VSPGraphic::Entity*> ( m_GEngine->getScene()->getObject( id ) );
+            eObj = dynamic_cast<VSPGraphic::Entity*> ( scene()->getObject( id ) );
             if( eObj )
             {
                 eObj->setVisibility( objects[i]->m_Visible );
@@ -537,7 +530,7 @@ void VspGlWindow::_update( std::vector<DrawObj *> objects )
 
                 if( objects[i]->m_GeomChanged )
                 {
-                    _loadXSecData( eObj, objects[i] );
+                    loadXSecData( eObj, objects[i] );
                 }
             }
             break;
@@ -545,14 +538,10 @@ void VspGlWindow::_update( std::vector<DrawObj *> objects )
         case DrawObj::VSP_HIDDEN_TRIS:
             if( id == 0xFFFFFFFF )
             {
-                m_GEngine->getScene()->createObject( Common::VSP_OBJECT_ENTITY, &id );
-
-                ID idInfo;
-                idInfo.bufferID = id;
-                idInfo.geomID = objects[i]->m_GeomID;
-                m_ids.push_back( idInfo );
+                scene()->createObject( Common::VSP_OBJECT_ENTITY, &id );
+                ids.push_back( ID( id, objects[i]->m_GeomID ) );
             }
-            eObj = dynamic_cast<VSPGraphic::Entity*> ( m_GEngine->getScene()->getObject( id ) );
+            eObj = dynamic_cast<VSPGraphic::Entity*> ( scene()->getObject( id ) );
             if( eObj )
             {
                 eObj->setVisibility( objects[i]->m_Visible );
@@ -567,7 +556,7 @@ void VspGlWindow::_update( std::vector<DrawObj *> objects )
 
                 if( objects[i]->m_GeomChanged )
                 {
-                    _loadTrisData( eObj, objects[i] );
+                    loadTrisData( eObj, objects[i] );
                 }
             }
             break;
@@ -575,14 +564,10 @@ void VspGlWindow::_update( std::vector<DrawObj *> objects )
         case DrawObj::VSP_HIDDEN_TRIS_CFD:
             if( id == 0xFFFFFFFF )
             {
-                m_GEngine->getScene()->createObject( Common::VSP_OBJECT_CFD_ENTITY, &id );
-
-                ID idInfo;
-                idInfo.bufferID = id;
-                idInfo.geomID = objects[i]->m_GeomID;
-                m_ids.push_back( idInfo );
+                scene()->createObject( Common::VSP_OBJECT_CFD_ENTITY, &id );
+                ids.push_back( ID( id, objects[i]->m_GeomID ) );
             }
-            eObj = dynamic_cast<VSPGraphic::Entity*> ( m_GEngine->getScene()->getObject( id ) );
+            eObj = dynamic_cast<VSPGraphic::Entity*> ( scene()->getObject( id ) );
             if( eObj )
             {
                 eObj->setVisibility( objects[i]->m_Visible );
@@ -597,7 +582,7 @@ void VspGlWindow::_update( std::vector<DrawObj *> objects )
 
                 if( objects[i]->m_GeomChanged )
                 {
-                    _loadTrisData( eObj, objects[i] );
+                    loadTrisData( eObj, objects[i] );
                 }
             }
             break;
@@ -605,14 +590,10 @@ void VspGlWindow::_update( std::vector<DrawObj *> objects )
         case DrawObj::VSP_SHADED_MESH:
             if( id == 0xFFFFFFFF )
             {
-                m_GEngine->getScene()->createObject( Common::VSP_OBJECT_XSEC_ENTITY, &id );
-
-                ID idInfo;
-                idInfo.bufferID = id;
-                idInfo.geomID = objects[i]->m_GeomID;
-                m_ids.push_back( idInfo );
+                scene()->createObject( Common::VSP_OBJECT_XSEC_ENTITY, &id );
+                ids.push_back( ID( id, objects[i]->m_GeomID ) );
             }
-            eObj = dynamic_cast<VSPGraphic::Entity*> ( m_GEngine->getScene()->getObject( id ) );
+            eObj = dynamic_cast<VSPGraphic::Entity*> ( scene()->getObject( id ) );
             if( eObj )
             {
                 eObj->setVisibility( objects[i]->m_Visible );
@@ -625,7 +606,7 @@ void VspGlWindow::_update( std::vector<DrawObj *> objects )
 
                 if( objects[i]->m_GeomChanged )
                 {
-                    _loadXSecData( eObj, objects[i] );
+                    loadXSecData( eObj, objects[i] );
                 }
             }
             break;
@@ -633,14 +614,10 @@ void VspGlWindow::_update( std::vector<DrawObj *> objects )
         case DrawObj::VSP_SHADED_TRIS:
             if( id == 0xFFFFFFFF )
             {
-                m_GEngine->getScene()->createObject( Common::VSP_OBJECT_ENTITY, &id );
-
-                ID idInfo;
-                idInfo.bufferID = id;
-                idInfo.geomID = objects[i]->m_GeomID;
-                m_ids.push_back( idInfo );
+                scene()->createObject( Common::VSP_OBJECT_ENTITY, &id );
+                ids.push_back( ID( id, objects[i]->m_GeomID ) );
             }
-            eObj = dynamic_cast<VSPGraphic::Entity*> ( m_GEngine->getScene()->getObject( id ) );
+            eObj = dynamic_cast<VSPGraphic::Entity*> ( scene()->getObject( id ) );
             if( eObj )
             {
                 eObj->setVisibility( objects[i]->m_Visible );
@@ -653,7 +630,7 @@ void VspGlWindow::_update( std::vector<DrawObj *> objects )
 
                 if( objects[i]->m_GeomChanged )
                 {
-                    _loadTrisData( eObj, objects[i] );
+                    loadTrisData( eObj, objects[i] );
                 }
             }
             break;
@@ -661,14 +638,10 @@ void VspGlWindow::_update( std::vector<DrawObj *> objects )
         case DrawObj::VSP_TEXTURED_MESH:
             if( id == 0xFFFFFFFF )
             {
-                m_GEngine->getScene()->createObject( Common::VSP_OBJECT_XSEC_ENTITY, &id );
-
-                ID idInfo;
-                idInfo.bufferID = id;
-                idInfo.geomID = objects[i]->m_GeomID;
-                m_ids.push_back( idInfo );
+                scene()->createObject( Common::VSP_OBJECT_XSEC_ENTITY, &id );
+                ids.push_back( ID( id, objects[i]->m_GeomID ) );
             }
-            eObj = dynamic_cast<VSPGraphic::Entity*> ( m_GEngine->getScene()->getObject( id ) );
+            eObj = dynamic_cast<VSPGraphic::Entity*> ( scene()->getObject( id ) );
             if( eObj )
             {
                 eObj->setVisibility( objects[i]->m_Visible );
@@ -681,9 +654,9 @@ void VspGlWindow::_update( std::vector<DrawObj *> objects )
 
                 if( objects[i]->m_GeomChanged )
                 {
-                    _loadXSecData( eObj, objects[i] );
+                    loadXSecData( eObj, objects[i] );
                 }
-                _updateTextures( objects[i] );
+                updateTextures( objects[i] );
             }
             break;
 
@@ -696,13 +669,13 @@ void VspGlWindow::_update( std::vector<DrawObj *> objects )
     for( int i = 0; i < ( int )objects.size(); i++ )
     {
         // If this DrawObj is aimed for other screen, ignore.
-        if( objects[i]->m_Screen != m_LinkedScreen )
+        if( objects[i]->m_Screen != linkedScreen )
         {
             continue;
         }
 
         unsigned int id;
-        ID * idPtr = _findID( objects[i]->m_GeomID );
+        ID * idPtr = findID( objects[i]->m_GeomID );
         if( idPtr )
         {
             id = idPtr->bufferID;
@@ -721,14 +694,10 @@ void VspGlWindow::_update( std::vector<DrawObj *> objects )
         case DrawObj::VSP_RULER:
             if( id == 0xFFFFFFFF )
             {
-                m_GEngine->getScene()->createObject( Common::VSP_OBJECT_RULER, &id );
-
-                ID idInfo;
-                idInfo.bufferID = id;
-                idInfo.geomID = objects[i]->m_GeomID;
-                m_ids.push_back( idInfo );
+                scene()->createObject( Common::VSP_OBJECT_RULER, &id );
+                ids.push_back( ID( id, objects[i]->m_GeomID ) );
             }
-            ruler = dynamic_cast<VSPGraphic::Ruler*> ( m_GEngine->getScene()->getObject( id ) );
+            ruler = dynamic_cast<VSPGraphic::Ruler*> ( scene()->getObject( id ) );
             if( ruler )
             {
                 ruler->setTextColor( (float)objects[i]->m_TextColor.x(),
@@ -788,18 +757,18 @@ void VspGlWindow::_update( std::vector<DrawObj *> objects )
 
     // Reset flag to show all selections.  This prevents selections from permanently hidden
     // due to misuse of VSP_PICK_VERTEX_HIDE_SELECTION object.
-    m_GEngine->getScene()->showSelection();
+    scene()->showSelection();
 
     for( int i = 0; i < ( int )objects.size(); i++ )
     {
         // If this DrawObj is aimed for other screen, ignore.
-        if( objects[i]->m_Screen != m_LinkedScreen )
+        if( objects[i]->m_Screen != linkedScreen )
         {
             continue;
         }
 
         unsigned int id;
-        ID * idPtr = _findID( objects[i]->m_GeomID );
+        ID * idPtr = findID( objects[i]->m_GeomID );
         if( idPtr )
         {
             id = idPtr->bufferID;
@@ -815,24 +784,20 @@ void VspGlWindow::_update( std::vector<DrawObj *> objects )
         switch( objects[i]->m_Type )
         {
         case DrawObj::VSP_PICK_VERTEX_HIDE_SELECTION:
-            m_GEngine->getScene()->hideSelection();
+            scene()->hideSelection();
             break;
 
         case DrawObj::VSP_PICK_GEOM:
             if( id == 0xFFFFFFFF )
             {
-                ID * sourceId = _findID( objects[i]->m_PickSourceID );
+                ID * sourceId = findID( objects[i]->m_PickSourceID );
                 if( sourceId )
                 {
-                    m_GEngine->getScene()->createObject( Common::VSP_OBJECT_PICK_GEOM, &id, sourceId->bufferID );
-
-                    ID idInfo;
-                    idInfo.bufferID = id;
-                    idInfo.geomID = objects[i]->m_GeomID;
-                    m_ids.push_back( idInfo );
+                    scene()->createObject( Common::VSP_OBJECT_PICK_GEOM, &id, sourceId->bufferID );
+                    ids.push_back( ID( id, objects[i]->m_GeomID ) );
                 }
             }
-            pObj = dynamic_cast<Pickable*> ( m_GEngine->getScene()->getObject( id ) );
+            pObj = dynamic_cast<Pickable*> ( scene()->getObject( id ) );
             if( pObj )
             {
                 pObj->setVisibility( objects[i]->m_Visible );
@@ -844,18 +809,14 @@ void VspGlWindow::_update( std::vector<DrawObj *> objects )
         case DrawObj::VSP_PICK_VERTEX:
             if( id == 0xFFFFFFFF )
             {
-                ID * sourceId = _findID( objects[i]->m_PickSourceID );
+                ID * sourceId = findID( objects[i]->m_PickSourceID );
                 if(sourceId)
                 {
-                    m_GEngine->getScene()->createObject( Common::VSP_OBJECT_PICK_VERTEX, &id, sourceId->bufferID );
-
-                    ID idInfo;
-                    idInfo.bufferID = id;
-                    idInfo.geomID = objects[i]->m_GeomID;
-                    m_ids.push_back( idInfo );
+                    scene()->createObject( Common::VSP_OBJECT_PICK_VERTEX, &id, sourceId->bufferID );
+                    ids.push_back( ID( id, objects[i]->m_GeomID ) );
                 }
             }
-            ppntObj = dynamic_cast<PickablePnts*> ( m_GEngine->getScene()->getObject( id ) );
+            ppntObj = dynamic_cast<PickablePnts*> ( scene()->getObject( id ) );
             if( ppntObj )
             {
                 ppntObj->setVisibility( objects[i]->m_Visible );
@@ -868,18 +829,14 @@ void VspGlWindow::_update( std::vector<DrawObj *> objects )
         case DrawObj::VSP_PICK_VERTEX_SELECT_ALL:
             if( id == 0xFFFFFFFF )
             {
-                ID * sourceId = _findID( objects[i]->m_PickSourceID );
+                ID * sourceId = findID( objects[i]->m_PickSourceID );
                 if(sourceId)
                 {
-                    m_GEngine->getScene()->createObject( Common::VSP_OBJECT_PICK_VERTEX, &id, sourceId->bufferID );
-
-                    ID idInfo;
-                    idInfo.bufferID = id;
-                    idInfo.geomID = objects[i]->m_GeomID;
-                    m_ids.push_back( idInfo );
+                    scene()->createObject( Common::VSP_OBJECT_PICK_VERTEX, &id, sourceId->bufferID );
+                    ids.push_back( ID( id, objects[i]->m_GeomID ) );
                 }
             }
-            ppntObj = dynamic_cast<PickablePnts*> ( m_GEngine->getScene()->getObject( id ) );
+            ppntObj = dynamic_cast<PickablePnts*> ( scene()->getObject( id ) );
             if( ppntObj )
             {
                 ppntObj->setVisibility( objects[i]->m_Visible );
@@ -888,29 +845,25 @@ void VspGlWindow::_update( std::vector<DrawObj *> objects )
                 ppntObj->update();
 
                 // Select all points from Pickable.
-                m_GEngine->getScene()->selectAll( ppntObj );
+                scene()->selectAll( ppntObj );
 
                 // Send feedback back to GUI.
-                std::string feedbackGroupName = m_GEngine->getScene()->getLastSelected()->getGroup();
-                _sendFeedback( m_GEngine->getScene()->getSelected( feedbackGroupName ) );
+                std::string feedbackGroupName = scene()->getLastSelected()->getGroup();
+                sendFeedback( scene()->getSelected( feedbackGroupName ) );
             }
             break;
 
         case DrawObj::VSP_PICK_VERTEX_UNSELECT_ALL:
-            m_GEngine->getScene()->unselectAll();
+            scene()->unselectAll();
             break;
 
         case DrawObj::VSP_PICK_LOCATION:
             if( id == 0xFFFFFFFF )
             {
-                m_GEngine->getScene()->createObject( Common::VSP_OBJECT_PICK_LOCATION, &id, 0 );
-
-                ID idInfo;
-                idInfo.bufferID = id;
-                idInfo.geomID = objects[i]->m_GeomID;
-                m_ids.push_back( idInfo );
+                scene()->createObject( Common::VSP_OBJECT_PICK_LOCATION, &id, 0 );
+                ids.push_back( ID( id, objects[i]->m_GeomID ) );
             }
-            pObj = dynamic_cast<Pickable*> ( m_GEngine->getScene()->getObject( id ) );
+            pObj = dynamic_cast<Pickable*> ( scene()->getObject( id ) );
             if( pObj )
             {
                 pObj->setVisibility( objects[i]->m_Visible );
@@ -928,7 +881,7 @@ void VspGlWindow::_update( std::vector<DrawObj *> objects )
     for( int i = 0; i < ( int )objects.size(); i++ )
     {
         // If this DrawObj is aimed for other screen, ignore.
-        if( objects[i]->m_Screen != m_LinkedScreen )
+        if( objects[i]->m_Screen != linkedScreen )
         {
             continue;
         }
@@ -944,7 +897,7 @@ void VspGlWindow::_update( std::vector<DrawObj *> objects )
         lineWidth = ( float )objects[i]->m_LineWidth;
 
         unsigned int id;
-        ID * idPtr = _findID( objects[i]->m_GeomID );
+        ID * idPtr = findID( objects[i]->m_GeomID );
         if( idPtr )
         {
             id = idPtr->bufferID;
@@ -961,15 +914,11 @@ void VspGlWindow::_update( std::vector<DrawObj *> objects )
         case DrawObj::VSP_POINTS:
             if( id == 0xFFFFFFFF )
             {
-                m_GEngine->getScene()->createObject( Common::VSP_OBJECT_MARKER, &id );
-
-                ID idInfo;
-                idInfo.bufferID = id;
-                idInfo.geomID = objects[i]->m_GeomID;
-                m_ids.push_back( idInfo );
+                scene()->createObject( Common::VSP_OBJECT_MARKER, &id );
+                ids.push_back( ID( id, objects[i]->m_GeomID ) );
             }
 
-            rObj = dynamic_cast<Renderable*> ( m_GEngine->getScene()->getObject( id ) );
+            rObj = dynamic_cast<Renderable*> ( scene()->getObject( id ) );
             if( rObj )
             {
                 rObj->setVisibility( objects[i]->m_Visible );
@@ -981,7 +930,7 @@ void VspGlWindow::_update( std::vector<DrawObj *> objects )
                 // Update buffer data if needed.
                 if( objects[i]->m_GeomChanged )
                 {
-                    _loadMarkData( rObj, objects[i] );
+                    loadMarkData( rObj, objects[i] );
                 }
             }
             break;
@@ -989,15 +938,11 @@ void VspGlWindow::_update( std::vector<DrawObj *> objects )
         case DrawObj::VSP_LINES:
             if( id == 0xFFFFFFFF )
             {
-                m_GEngine->getScene()->createObject( Common::VSP_OBJECT_MARKER, &id );
-
-                ID idInfo;
-                idInfo.bufferID = id;
-                idInfo.geomID = objects[i]->m_GeomID;
-                m_ids.push_back( idInfo );
+                scene()->createObject( Common::VSP_OBJECT_MARKER, &id );
+                ids.push_back( ID( id, objects[i]->m_GeomID ) );
             }
 
-            rObj = dynamic_cast<Renderable*> ( m_GEngine->getScene()->getObject( id ) );
+            rObj = dynamic_cast<Renderable*> ( scene()->getObject( id ) );
             if( rObj )
             {
                 rObj->setVisibility( objects[i]->m_Visible );
@@ -1007,7 +952,7 @@ void VspGlWindow::_update( std::vector<DrawObj *> objects )
 
                 if( objects[i]->m_GeomChanged )
                 {
-                    _loadMarkData( rObj, objects[i] );
+                    loadMarkData( rObj, objects[i] );
                 }
             }
             break;
@@ -1015,14 +960,10 @@ void VspGlWindow::_update( std::vector<DrawObj *> objects )
         case DrawObj::VSP_LINE_LOOP:
             if( id == 0xFFFFFFFF )
             {
-                m_GEngine->getScene()->createObject( Common::VSP_OBJECT_MARKER, &id );
-
-                ID idInfo;
-                idInfo.bufferID = id;
-                idInfo.geomID = objects[i]->m_GeomID;
-                m_ids.push_back( idInfo );
+                scene()->createObject( Common::VSP_OBJECT_MARKER, &id );
+                ids.push_back( ID( id, objects[i]->m_GeomID ) );
             }
-            rObj = dynamic_cast<Renderable*> ( m_GEngine->getScene()->getObject( id ) );
+            rObj = dynamic_cast<Renderable*> ( scene()->getObject( id ) );
             if( rObj )
             {
                 rObj->setVisibility( objects[i]->m_Visible );
@@ -1031,7 +972,7 @@ void VspGlWindow::_update( std::vector<DrawObj *> objects )
 
                 if( objects[i]->m_GeomChanged )
                 {
-                    _loadMarkData( rObj, objects[i] );
+                    loadMarkData( rObj, objects[i] );
                 }
             }
             break;
@@ -1039,14 +980,10 @@ void VspGlWindow::_update( std::vector<DrawObj *> objects )
         case DrawObj::VSP_LINE_STRIP:
             if( id == 0xFFFFFFFF )
             {
-                m_GEngine->getScene()->createObject( Common::VSP_OBJECT_MARKER, &id );
-
-                ID idInfo;
-                idInfo.bufferID = id;
-                idInfo.geomID = objects[i]->m_GeomID;
-                m_ids.push_back( idInfo );
+                scene()->createObject( Common::VSP_OBJECT_MARKER, &id );
+                ids.push_back( ID( id, objects[i]->m_GeomID ) );
             }
-            rObj = dynamic_cast<Renderable*> ( m_GEngine->getScene()->getObject( id ) );
+            rObj = dynamic_cast<Renderable*> ( scene()->getObject( id ) );
             if( rObj )
             {
                 rObj->setVisibility( objects[i]->m_Visible );
@@ -1056,7 +993,7 @@ void VspGlWindow::_update( std::vector<DrawObj *> objects )
 
                 if( objects[i]->m_GeomChanged )
                 {
-                    _loadMarkData( rObj, objects[i] );
+                    loadMarkData( rObj, objects[i] );
                 }
             }
             break;
@@ -1067,71 +1004,71 @@ void VspGlWindow::_update( std::vector<DrawObj *> objects )
     }
 }
 
-VspGlWindow::ID * VspGlWindow::_findID( std::string geomID )
+VspGlWindow::Private::ID * VspGlWindow::Private::findID( std::string geomID )
 {
-    for( int i = 0; i < ( int )m_ids.size(); i++ )
+    for( int i = 0; i < ( int )ids.size(); i++ )
     {
-        if( m_ids[i].geomID == geomID )
+        if( ids[i].geomID == geomID )
         {
-            return &m_ids[i];
+            return &ids[i];
         }
     }
     return NULL;
 }
 
-VspGlWindow::ID * VspGlWindow::_findID( unsigned int bufferID )
+VspGlWindow::Private::ID * VspGlWindow::Private::findID( unsigned int bufferID )
 {
-    for( int i = 0; i < ( int )m_ids.size(); i++ )
+    for( int i = 0; i < ( int )ids.size(); i++ )
     {
-        if( m_ids[i].bufferID == bufferID )
+        if( ids[i].bufferID == bufferID )
         {
-            return &m_ids[i];
+            return &ids[i];
         }
     }
     return NULL;
 }
 
-void VspGlWindow::_updateBuffer( std::vector<DrawObj *> objects )
+void VspGlWindow::Private::updateBuffer( std::vector<DrawObj *> objects )
 {
     std::vector<ID> idsToRemove;
     std::vector<ID> idsToKeep;
 
     // Figure out if any buffer object no longer exists in DrawObjs.
-    for( int i = 0; i < ( int )m_ids.size(); i++ )
+    for( int i = 0; i < ( int )ids.size(); i++ )
     {
         bool exist = false;
         for( int j = 0; j < ( int )objects.size(); j++ )
         {
-            if( m_ids[i].geomID == objects[j]->m_GeomID && m_ids[i].geomID != std::string( "Default" ) )
+            if( ids[i].geomID == objects[j]->m_GeomID && ids[i].geomID != std::string( "Default" ) )
             {
-                idsToKeep.push_back( m_ids[i] );
+                idsToKeep.push_back( ids[i] );
                 exist = true;
                 break;
             }
         }
         if( !exist )
         {
-            idsToRemove.push_back( m_ids[i] );
+            idsToRemove.push_back( ids[i] );
         }
     }
 
     // Remove unnecessary buffers.
     for( int i = 0; i < ( int )idsToRemove.size(); i++ )
     {
-        m_GEngine->getScene()->removeObject( idsToRemove[i].bufferID );
+        scene()->removeObject( idsToRemove[i].bufferID );
     }
 
     // Update m_ids.
-    m_ids.clear();
+    ids.clear();
     for( int i = 0; i < ( int )idsToKeep.size(); i++ )
     {
-        m_ids.push_back( idsToKeep[i] );
+        ids.push_back( idsToKeep[i] );
     }
 }
 
-void VspGlWindow::_updateTextures( DrawObj * drawObj )
+void VspGlWindow::Private::updateTextures( DrawObj * drawObj )
 {
-    VspGlWindow::ID * id = _findID( drawObj->m_GeomID );
+    ID * id = findID( drawObj->m_GeomID );
     if( !id )
     {
         // Can't find Object that is linked to this drawObj
@@ -1139,7 +1076,7 @@ void VspGlWindow::_updateTextures( DrawObj * drawObj )
         return;
     }
 
-    Renderable * renderable = dynamic_cast<Renderable*>( m_GEngine->getScene()->getObject( id->bufferID ) );
+    Renderable * renderable = dynamic_cast<Renderable*>( scene()->getObject( id->bufferID ) );
     if( renderable )
     {
         VSPGraphic::Entity * entity = dynamic_cast<VSPGraphic::Entity *>( renderable );
@@ -1229,13 +1166,13 @@ void VspGlWindow::_updateTextures( DrawObj * drawObj )
     }
 }
 
-void VspGlWindow::_loadXSecData( Renderable * destObj, DrawObj * drawObj )
+void VspGlWindow::Private::loadXSecData( Renderable * destObj, DrawObj * drawObj )
 {
     std::vector<float> vdata;
     std::vector<unsigned int> edata;
 
     // Generate Texture Coordinate.
-    std::vector<std::vector<vec3d>> textureCoords = _generateTexCoordFromXSec( drawObj );
+    std::vector<std::vector<vec3d>> textureCoords = generateTexCoordFromXSec( drawObj );
 
     int num_pnts = drawObj->m_PntMesh.size();
     int num_xsecs = 0;
@@ -1297,7 +1234,7 @@ void VspGlWindow::_loadXSecData( Renderable * destObj, DrawObj * drawObj )
     }
 }
 
-void VspGlWindow::_loadTrisData( Renderable * destObj, DrawObj * drawObj )
+void VspGlWindow::Private::loadTrisData( Renderable * destObj, DrawObj * drawObj )
 {
     assert( drawObj->m_PntVec.size() == drawObj->m_NormVec.size() );
 
@@ -1322,7 +1259,7 @@ void VspGlWindow::_loadTrisData( Renderable * destObj, DrawObj * drawObj )
     destObj->appendVBuffer( data.data(), sizeof( float ) * data.size() );
 }
 
-void VspGlWindow::_loadMarkData( Renderable * destObj, DrawObj * drawObj )
+void VspGlWindow::Private::loadMarkData( Renderable * destObj, DrawObj * drawObj )
 {
     std::vector<float> data;
 
@@ -1341,7 +1278,7 @@ void VspGlWindow::_loadMarkData( Renderable * destObj, DrawObj * drawObj )
     destObj->appendVBuffer(data.data(), sizeof( float ) * data.size());
 }
 
-std::vector<std::vector<vec3d>> VspGlWindow::_generateTexCoordFromXSec( DrawObj * drawObj )
+std::vector<std::vector<vec3d>> VspGlWindow::Private::generateTexCoordFromXSec( DrawObj * drawObj )
 {
     int i, j;
     std::vector<std::vector<vec3d>> coordinates;
@@ -1368,7 +1305,7 @@ std::vector<std::vector<vec3d>> VspGlWindow::_generateTexCoordFromXSec( DrawObj 
         coordinates[i][0].set_y( 0.0 );
         for ( j = 1 ; j < num_xsecs ; j++ )
         {
-            double distance = _distance( drawObj->m_PntMesh[i][j - 1], drawObj->m_PntMesh[i][j] );
+            double distance = this->distance( drawObj->m_PntMesh[i][j - 1], drawObj->m_PntMesh[i][j] );
             totalDistance += distance;
             coordinates[i][j].set_y( distance );
         }
@@ -1393,7 +1330,7 @@ std::vector<std::vector<vec3d>> VspGlWindow::_generateTexCoordFromXSec( DrawObj 
         coordinates[0][i].set_x( 0.0 );
         for( j = 1; j < num_pnts ; j++ )
         {
-            double distance = _distance( drawObj->m_PntMesh[j - 1][i], drawObj->m_PntMesh[j][i] );
+            double distance = this->distance( drawObj->m_PntMesh[j - 1][i], drawObj->m_PntMesh[j][i] );
             totalDistance += distance;
             coordinates[j][i].set_x( distance );
         }
@@ -1411,7 +1348,7 @@ std::vector<std::vector<vec3d>> VspGlWindow::_generateTexCoordFromXSec( DrawObj 
     return coordinates;
 }
 
-void VspGlWindow::_setLighting( DrawObj * drawObj )
+void VspGlWindow::Private::setLighting( DrawObj * drawObj )
 {
     if( drawObj->m_Type != DrawObj::VSP_SETTING )
         return;
@@ -1425,7 +1362,7 @@ void VspGlWindow::_setLighting( DrawObj * drawObj )
 
     LightSource * lSource;
 
-    Lighting * lights = m_GEngine->getScene()->getLights();
+    Lighting * lights = scene()->getLights();
 
     for( int i = 0; i < (int)drawObj->m_LightingInfos.size(); i++ )
     {
@@ -1445,12 +1382,12 @@ void VspGlWindow::_setLighting( DrawObj * drawObj )
     }
 }
 
-void VspGlWindow::_setClipping( DrawObj * drawObj )
+void VspGlWindow::Private::setClipping( DrawObj * drawObj )
 {
     if( drawObj->m_Type != DrawObj::VSP_CLIP )
         return;
 
-    Clipping * clip = m_GEngine->getScene()->GetClipping();
+    Clipping * clip = scene()->GetClipping();
 
     for( int i = 0; i < 6; i++ )
     {
@@ -1487,7 +1424,7 @@ void VspGlWindow::_setClipping( DrawObj * drawObj )
     }
 }
 
-double VspGlWindow::_distance( vec3d pointA, vec3d pointB )
+double VspGlWindow::Private::distance( vec3d pointA, vec3d pointB )
 {
     double x = pointB.x() - pointA.x();
     double y = pointB.y() - pointA.y();
@@ -1496,180 +1433,180 @@ double VspGlWindow::_distance( vec3d pointA, vec3d pointB )
     return std::sqrt( x * x + y * y + z * z );
 }
 
-void VspGlWindow::OnPush( int x, int y )
+void VspGlWindow::mousePressEvent( QMouseEvent * ev )
 {
-    VSPGraphic::Display * display = m_GEngine->getDisplay();
-    display->selectViewport( x, y );
+    V_D( VspGlWindow );
+    VSPGraphic::Display * display = d->display();
+    d->updateMouse();
+    display->selectViewport( d->mouse );
 
-    if( Fl::event_button1() && Fl::event_button3() )
+    if ( ev->buttons() == ( Qt::LeftButton | Qt::RightButton ) )
     {
-        // LB + RB 
-        m_prevLBRB = glm::vec2( x, y );
+        d->prevLBRB = d->mouse;
     }
-    else if( Fl::event_button1() )
+    else if( ev->buttons() == Qt::LeftButton )
     {
-        if( Fl::event_alt() )
+        if ( ev->modifiers() == Qt::AltModifier )
         {
-            // Alt + LB
-            m_prevAltLB = glm::vec2( x, y );
+            d->prevAltLB = d->mouse;
         }
-        else if( Fl::event_ctrl() )
+        else if( ev->modifiers() == Qt::ControlModifier )
         {
-            // Ctrl + LB
-            m_prevCtrlLB = glm::vec2( x, y );
+            d->prevCtrlLB = d->mouse;
         }
-        else if( Fl::event_state( FL_META ) )
+        else if( ev->modifiers() == Qt::MetaModifier )
         {
-            // Meta + LB
-            m_prevMetaLB = glm::vec2( x, y );
+            d->prevMetaLB = d->mouse;
         }
-        else
+        else if( ev->modifiers() == Qt::NoModifier )
         {
             // LB
             glm::vec3 mouseInWorld = glm::vec3( 0xFFFFFFFF );
 
             // Getting mouse location in world space.  This is for selectLocation().
-            Viewport * vp = m_GEngine->getDisplay()->getViewport();
+            Viewport * vp = d->viewport();
             if( vp )
             {
-                mouseInWorld = vp->screenToWorld( glm::vec2( m_mouse_x, m_mouse_y ) );
+                mouseInWorld = vp->screenToWorld( glm::vec2( d->mouse.x(), d->mouse.y() ) );
             }
 
             // Select highlighted.
-            if( m_GEngine->getScene()->selectHighlight() )
+            if( d->scene()->selectHighlight() )
             {
-                Selectable * selected = m_GEngine->getScene()->getLastSelected();
-                _sendFeedback( selected );
+                Selectable * selected = d->scene()->getLastSelected();
+                d->sendFeedback( selected );
             }
             // Select location in world.
             else if( mouseInWorld != glm::vec3( 0xFFFFFFFF ) && 
-                m_GEngine->getScene()->selectLocation( mouseInWorld.x, mouseInWorld.y, mouseInWorld.z ) )
+                d->scene()->selectLocation( mouseInWorld.x, mouseInWorld.y, mouseInWorld.z ) )
             {
-                Selectable * selected = m_GEngine->getScene()->getLastSelected();
-                _sendFeedback( selected );
+                Selectable * selected = d->scene()->getLastSelected();
+                d->sendFeedback( selected );
             }
             // Rotation.
             else
             {
-                m_prevLB = glm::vec2( x, y );
+                d->prevLB = d->mouse;
             }
         }
     }
     else if( Fl::event_button2() )
     {
         // MB
-        m_prevMB = glm::vec2( x, y );
+        d->prevMB = d->mouse;
     }
     else if( Fl::event_button3() )
     {
         // RB
-        m_prevRB = glm::vec2( x, y );
+        d->prevRB = d->mouse;
     }
-    redraw();
+    QGLWidget::update();
 }
 
-void VspGlWindow::OnDrag( int x, int y )
+void VspGlWindow::mouseMoveEvent( QMouseEvent * ev )
 {
-    VSPGraphic::Display * display = m_GEngine->getDisplay();
+    V_D( VspGlWindow );
+    d->updateMouse();
+    if ( ! ev->buttons() ) {
+        if ( d->gEngine.getScene()->isPickingEnabled() ) {
+            update();
+        }
+        return;
+    }
 
-    if( Fl::event_button1() && Fl::event_button3() )
+    VSPGraphic::Display * display = d->display();
+    if ( ev->buttons() == ( Qt::LeftButton | Qt::RightButton ) )
     {
-        // LB + RB 
-        if( m_prevLBRB != glm::vec2( 0xFFFFFFFF ) )
+        if( ! d->prevLBRB.isNull() )
         {
-            display->zoom( ( int )m_prevLBRB.x, ( int )m_prevLBRB.y, x, y );
+            display->zoom( d->prevLBRB, d->mouse );
         }
-        m_prevLBRB = glm::vec2( x, y );
+        d->prevLBRB = d->mouse;
     }
-    else if( Fl::event_button1() )
+    else if ( ev->buttons() == Qt::LeftButton )
     {
-        if( Fl::event_alt() )
+        if ( ev->modifiers() == Qt::AltModifier )
         {
-            // Alt + LB
-            if( m_prevAltLB != glm::vec2( 0xFFFFFFFF ) )
+            if( ! d->prevAltLB.isNull() )
             {
-                display->pan( ( int )m_prevAltLB.x, ( int )m_prevAltLB.y, x, y );
+                display->pan( d->prevAltLB, d->mouse );
             }
-            m_prevAltLB = glm::vec2( x, y );
+            d->prevAltLB = d->mouse;
         }
-        else if( Fl::event_ctrl() )
+        else if ( ev->modifiers() == Qt::ControlModifier )
         {
-            // Ctrl + LB
-            if( m_prevCtrlLB != glm::vec2( 0xFFFFFFFF ) )
+            if( ! d->prevCtrlLB.isNull() )
             {
-                display->zoom( ( int )m_prevCtrlLB.x, ( int )m_prevCtrlLB.y, x, y );
+                display->zoom( d->prevCtrlLB, d->mouse );
             }
-            m_prevCtrlLB = glm::vec2( x, y );
+            d->prevCtrlLB = d->mouse;
         }
-        else if( Fl::event_state( FL_META ) )
+        else if ( ev->modifiers() == Qt::MetaModifier )
         {
-            if( m_prevMetaLB != glm::vec2( 0xFFFFFFFF ) )
+            if( ! d->prevMetaLB.isNull() )
             {
-                display->zoom( ( int )m_prevMetaLB.x, ( int )m_prevMetaLB.y, x, y );
+                display->zoom( d->prevMetaLB, d->mouse );
             }
-            m_prevMetaLB = glm::vec2( x, y );
+            d->prevMetaLB = d->mouse;
         }
-        else
+        else if ( ev->modifiers() == Qt::NoModifier )
         {
-            // LB
-            if( m_prevLB != glm::vec2( 0xFFFFFFFF ) )
+            if( ! d->prevLB.isNull() )
             {
-                display->rotate( ( int )m_prevLB.x, ( int )m_prevLB.y, x, y );
+                display->rotate( d->prevLB, d->mouse );
             }
-            m_prevLB = glm::vec2( x, y );
+            d->prevLB = d->mouse;
         }
     }
-    else if( Fl::event_button2() )
+    else if( ev->buttons() == Qt::MiddleButton )
     {
-        // MB
-        if( m_prevMB != glm::vec2( 0xFFFFFFFF ) )
+        if( ! d->prevMB.isNull() )
         {
-            display->zoom( ( int )m_prevMB.x, ( int )m_prevMB.y, x, y );
+            display->zoom( d->prevMB, d->mouse );
         }
-        m_prevMB = glm::vec2( x, y );
+        d->prevMB = d->mouse;
     }
-    else if( Fl::event_button3() )
+    else if( ev->buttons() == Qt::RightButton )
     {
-        // RB
-        if( m_prevRB != glm::vec2( 0xFFFFFFFF ) )
+        if( ! d->prevRB.isNull() )
         {
-            display->pan( ( int )m_prevRB.x, ( int )m_prevRB.y, x, y );
+            display->pan( d->prevRB, d->mouse );
         }
-        m_prevRB = glm::vec2( x, y );
+        d->prevRB = d->mouse;
     }
-    redraw();
+    QGLWidget::update();
 }
 
-void VspGlWindow::OnRelease( int x, int y )
-{
-    // Reset buttons positions.
-    switch( Fl::event_button() )
+
+/// Reset button positions.
+void VspGlWindow::mouseReleaseEvent( QMouseEvent * ev )
+{   
+    V_D( VspGlWindow );
+    d->updateMouse();
+    if ( ! ev->buttons() & Qt::LeftButton )
     {
-    case FL_LEFT_MOUSE:
-        m_prevLB = m_prevAltLB = m_prevCtrlLB = glm::vec2( 0xFFFFFFFF );
-        m_prevMetaLB = glm::vec2( 0xFFFFFFFF );
-        break;
-
-    case FL_RIGHT_MOUSE:
-        m_prevRB = glm::vec2( 0xFFFFFFFF );
-        break;
-
-    case FL_MIDDLE_MOUSE:
-        m_prevMB = glm::vec2( 0xFFFFFFFF );
-        break;
+        d->prevLB = d->prevAltLB = d->prevCtrlLB = d->prevMetaLB = QPoint();
     }
-    redraw();
+    if ( ! ev->buttons() & Qt::RightButton )
+    {
+        d->prevRB = QPoint();
+    }
+    if (! ev->buttons() & Qt::MiddleButton )
+    {
+        d->prevMB = QPoint();
+    }
+    QGLWidget::update();
 }
 
-void VspGlWindow::OnKeyup( int x, int y )
+void VspGlWindow::keyReleaseEvent( QKeyEvent * ev )
 {
-    VSPGraphic::Display * display = m_GEngine->getDisplay();
+    V_D( VspGlWindow );
+    d->updateMouse();
+    VSPGraphic::Display * display = d->display();
 
-    switch( Fl::event_key() )
+    switch( ev->key() )
     {
-    case 0x43:
-    case 0x63:
-        // Key 'C', center.
+    case Qt::Key_C: // center
     {
         Vehicle* vPtr = VehicleMgr.GetVehicle();
         if ( vPtr )
@@ -1682,176 +1619,114 @@ void VspGlWindow::OnKeyup( int x, int y )
         break;
     }
 
-    case FL_F+1:
-        if( Fl::event_state( FL_SHIFT ) )
+    case Qt::Key_F1:
+    case Qt::Key_F2:
+    case Qt::Key_F3:
+    case Qt::Key_F4:
+        if ( ev->modifiers() == Qt::ShiftModifier )
         {
-            display->save( 0 );
+            display->save( ev->key() - Qt::Key_F1 );
         }
-        else
+        else if ( ev->modifiers() == Qt::NoModifier )
         {
-            display->load( 0 );
-        }
-        break;
-
-    case FL_F+2:
-        if( Fl::event_state( FL_SHIFT ) )
-        {
-            display->save( 1 );
-        }
-        else
-        {
-            display->load( 1 );
+            display->load( ev->key() - Qt::Key_F1 );
         }
         break;
 
-    case FL_F+3:
-        if( Fl::event_state( FL_SHIFT ) )
-        {
-            display->save( 2 );
-        }
-        else
-        {
-            display->load( 2 );
-        }
-        break;
-
-    case FL_F+4:
-        if( Fl::event_state( FL_SHIFT ) )
-        {
-            display->save( 3 );
-        }
-        else
-        {
-            display->load( 3 );
-        }
-        break;
-
-    case FL_F+5:
+    case Qt::Key_F5:
         display->changeView( Common::VSP_CAM_TOP );
         break;
 
-    case FL_F+6:
+    case Qt::Key_F6:
         display->changeView( Common::VSP_CAM_FRONT );
         break;
 
-    case FL_F+7:
+    case Qt::Key_F7:
         display->changeView( Common::VSP_CAM_LEFT );
         break;
 
-    case FL_F+8:
+    case Qt::Key_F8:
         display->changeView( Common::VSP_CAM_LEFT_ISO );
         break;
 
-    case FL_F+9:
+    case Qt::Key_F9:
         display->changeView( Common::VSP_CAM_BOTTOM );
         break;
 
-    case FL_F+10:
+    case Qt::Key_F10:
         display->changeView( Common::VSP_CAM_REAR );
         break;
 
-    case FL_F+11:
+    case Qt::Key_F11:
         display->changeView( Common::VSP_CAM_RIGHT );
         break;
 
-    case FL_F+12:
+    case Qt::Key_F12:
         display->changeView( Common::VSP_CAM_RIGHT_ISO );
         break;
 
-    case FL_Alt_L:
-    case FL_Alt_R:
-
+    case Qt::Key_Alt:
+    case Qt::Key_Control:
+    case Qt::Key_Meta:
         // If mouse still pressed, start perform mouse action.
-        if( Fl::event_button1() )
-        {
-            m_prevLB = glm::vec2( x, y );
-
-            // Stop Alt+B control.
-            m_prevAltLB = glm::vec2( 0xFFFFFFFF );
+        if( QGuiApplication::mouseButtons() != Qt::NoButton) {
+            d->updateMouse();
+            if ( QGuiApplication::mouseButtons() & Qt::LeftButton )
+            {
+                d->prevLB = d->mouse;
+                switch ( ev->key() ) {
+                    // Stop modifier+button control
+                case Qt::Key_Alt:
+                    d->prevAltLB = QPoint();
+                    break;
+                case Qt::Key_Control:
+                    d->prevCtrlLB = QPoint();
+                    break;
+                case Qt::Key_Meta:
+                    d->prevMetaLB = QPoint();
+                    break;
+                }
+            }
+            if( QGuiApplication::mouseButtons() & Qt::MiddleButton )
+            {
+                d->prevMB = d->mouse;
+            }
+            if( QGuiApplication::mouseButtons() & Qt::RightButton )
+            {
+                d->prevRB = d->mouse;
+            }
         }
-        if( Fl::event_button2() )
-        {
-            m_prevMB = glm::vec2( x, y );
-        }
-        if( Fl::event_button3() )
-        {
-            m_prevRB = glm::vec2( x, y );
-        }		
-        break;
-
-    case FL_Control_L:
-    case FL_Control_R:
-
-        // If mouse still pressed, start perform mouse action.
-        if( Fl::event_button1() )
-        {
-            m_prevLB = glm::vec2( x, y );
-
-            // Stop Alt+B control.
-            m_prevCtrlLB = glm::vec2( 0xFFFFFFFF );
-        }
-        if( Fl::event_button2() )
-        {
-            m_prevMB = glm::vec2( x, y );
-        }
-        if( Fl::event_button3() )
-        {
-            m_prevRB = glm::vec2( x, y );
-        }		
-        break;
-
-    case FL_Meta_L:
-    case FL_Meta_R:
-
-        // If mouse still pressed, start perform mouse action.
-        if( Fl::event_button1() )
-        {
-            m_prevLB = glm::vec2( x, y );
-
-            // Stop Alt+B control.
-            m_prevCtrlLB = glm::vec2( 0xFFFFFFFF );
-        }
-        if( Fl::event_button2() )
-        {
-            m_prevMB = glm::vec2( x, y );
-        }
-        if( Fl::event_button3() )
-        {
-            m_prevRB = glm::vec2( x, y );
-        }		
         break;
     }
-    redraw();
+    QGLWidget::update();
 }
 
-void VspGlWindow::OnKeydown()
+void VspGlWindow::keyPressEvent( QKeyEvent * ev )
 {
+    V_D( VspGlWindow );
     ManageGeomScreen * geomScreen = NULL;
     ManageCORScreen * corScreen = NULL;
+    d->updateMouse();
 
-    switch( Fl::event_key() )
+    switch( ev->key() )
     {
-    // 'p'
-    case 0x50:
-    case 0x70:
+    case Qt::Key_P:
         geomScreen = dynamic_cast<ManageGeomScreen *>
-            ( m_ScreenMgr->GetScreen( ScreenMgr::VSP_MANAGE_GEOM_SCREEN ) );
+            ( getScreen( ScreenMgr::VSP_MANAGE_GEOM_SCREEN ) );
         if( geomScreen )
         {
             geomScreen->TriggerPickSwitch();
         }
         break;
-    // 'r'
-    case 0x52:
-    case 0x72:
+    case Qt::Key_R:
         corScreen = dynamic_cast<ManageCORScreen *> 
-            ( m_ScreenMgr->GetScreen( ScreenMgr::VSP_COR_SCREEN ) );
+            ( getScreen( ScreenMgr::VSP_COR_SCREEN ) );
         if( corScreen )
         {
             corScreen->EnableSelection();
         }
         break;
-    case FL_Escape:
+    case Qt::Key_Escape:
         Vehicle* vPtr = VehicleMgr.GetVehicle();
         if ( vPtr )
         {
@@ -1861,17 +1736,17 @@ void VspGlWindow::OnKeydown()
         }
         break;
     }
-    redraw();
+    QGLWidget::update();
 }
 
-void VspGlWindow::_sendFeedback( Selectable * selected )
+void VspGlWindow::Private::sendFeedback( Selectable * selected )
 {
     // Find out where feedback is heading...
     std::string selectedFeedbackName = selected->getGroup();
 
     // Label Screen Feedback
     ManageLabelScreen * labelScreen = dynamic_cast<ManageLabelScreen*>
-        ( m_ScreenMgr->GetScreen( ScreenMgr::VSP_LABEL_SCREEN ) );
+        ( getScreen( ScreenMgr::VSP_LABEL_SCREEN ) );
 
     if( labelScreen && labelScreen->getFeedbackGroupName() == selectedFeedbackName )
     {
@@ -1883,7 +1758,7 @@ void VspGlWindow::_sendFeedback( Selectable * selected )
             labelScreen->Set( vec3d(placement.x, placement.y, placement.z ) );
 
             // Only one selection is needed for label, remove this 'selected' from selection list.
-            m_GEngine->getScene()->removeSelected( selected );
+            scene()->removeSelected( selected );
             selected = NULL;
         }
 
@@ -1895,7 +1770,7 @@ void VspGlWindow::_sendFeedback( Selectable * selected )
             XSecEntity * xEntity = dynamic_cast<XSecEntity*>(pnt->getSource());
             if(xEntity)
             {
-                ID * id = _findID( xEntity->getID() );
+                ID * id = findID( xEntity->getID() );
                 if( id )
                 {
                     int index = id->geomID.find_last_of( '_' );
@@ -1904,7 +1779,7 @@ void VspGlWindow::_sendFeedback( Selectable * selected )
                     labelScreen->Set( vec3d( placement.x, placement.y, placement.z ), baseId );
 
                     // Only one selection is needed for label, remove this 'selected' from selection list.
-                    m_GEngine->getScene()->removeSelected( selected );
+                    scene()->removeSelected( selected );
                     selected = NULL;
                 }
             }
@@ -1913,14 +1788,14 @@ void VspGlWindow::_sendFeedback( Selectable * selected )
 
     // Geom Screen Feedback
     ManageGeomScreen * geomScreen = dynamic_cast<ManageGeomScreen *>
-        ( m_ScreenMgr->GetScreen( ScreenMgr::VSP_MANAGE_GEOM_SCREEN ) );
+        ( getScreen( ScreenMgr::VSP_MANAGE_GEOM_SCREEN ) );
 
     if( geomScreen && geomScreen->getFeedbackGroupName() == selectedFeedbackName )
     {
         SelectedGeom * geom = dynamic_cast<SelectedGeom*>( selected );
         if( geom )
         {
-            ID * id = _findID( geom->getSource()->getID() );
+            ID * id = findID( geom->getSource()->getID() );
             if( id )
             {
                 int index = id->geomID.find_last_of( '_' );
@@ -1928,7 +1803,7 @@ void VspGlWindow::_sendFeedback( Selectable * selected )
                 geomScreen->Set( baseId );
 
                 // Only one selection is needed for Geom, remove this 'selected' from selection list.
-                m_GEngine->getScene()->removeSelected( selected );
+                scene()->removeSelected( selected );
                 selected = NULL;
             }
         }
@@ -1941,7 +1816,7 @@ void VspGlWindow::_sendFeedback( Selectable * selected )
 
     // Center of rotation Screen Feedback
     ManageCORScreen * corScreen = dynamic_cast<ManageCORScreen*>
-        ( m_ScreenMgr->GetScreen( ScreenMgr::VSP_COR_SCREEN ) );
+        ( getScreen( ScreenMgr::VSP_COR_SCREEN ) );
 
     if( corScreen && corScreen->getFeedbackGroupName() == selectedFeedbackName )
     {
@@ -1960,18 +1835,20 @@ void VspGlWindow::_sendFeedback( Selectable * selected )
                 corScreen->Set( vec3d( placement.x, placement.y, placement.z ) );
 
                 // Only one selection is needed for Center of Rotation, remove this 'selected' from selection list.
-                m_GEngine->getScene()->removeSelected( selected );
+                scene()->removeSelected( selected );
                 selected = NULL;
             }
         }
     }
 }
 
-void VspGlWindow::_sendFeedback( std::vector<Selectable *> listOfSelected )
+void VspGlWindow::Private::sendFeedback( std::vector<Selectable *> listOfSelected )
 {
     for ( int i = 0; i < (int) listOfSelected.size(); i++ )
     {
-        _sendFeedback( listOfSelected[i] );
+        sendFeedback( listOfSelected[i] );
     }
 }
-} // Close out namespace VSPGUI
+
+VspGlWindow::~VspGlWindow() {}
+} // namespace VSPGUI

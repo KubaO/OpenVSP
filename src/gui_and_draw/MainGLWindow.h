@@ -1,8 +1,13 @@
+//
+// This file is released under the terms of the NASA Open Source Agreement (NOSA)
+// version 1.3 as detailed in the LICENSE file which accompanies this software.
+//
+//
+//////////////////////////////////////////////////////////////////////
+
 #ifndef VSP_GUI_GL_WINDOW_H
 #define VSP_GUI_GL_WINDOW_H
 
-#include <FL/Fl.H>
-#include <FL/Fl_Gl_Window.H>
 #include <vector>
 #include <string>
 
@@ -12,6 +17,12 @@
 #include "Common.h"
 
 #include "DrawObj.h"
+#include "VspObj.h"
+#include <QGLWidget>
+
+QT_BEGIN_NAMESPACE
+class QPoint;
+QT_END_NAMESPACE
 
 namespace VSPGraphic
 {
@@ -24,20 +35,16 @@ class ScreenMgr;
 
 namespace VSPGUI
 {
-class VspGlWindow : public Fl_Gl_Window
+class VspGlWindow : public QGLWidget
 {
+    Q_OBJECT
+    VSP_DECLARE_PRIVATE( VspGlWindow )
+    QScopedPointer< Private > const d_ptr;
 public:
-    /*
-    * Constructor.
-    * drawObjScreen - specific drawObj screen to link.
-    */
-    VspGlWindow( int x, int y, int w, int h, ScreenMgr * mgr, DrawObj::ScreenEnum drawObjScreen );
-    /*
-    * Destructor.
-    */
-    virtual ~VspGlWindow();
+    /*! \param drawObjScreen - specific drawObj screen to link. */
+    VspGlWindow( ScreenMgr * mgr, DrawObj::ScreenEnum drawObjScreen, QWidget * parent = 0 );
+    ~VspGlWindow();
 
-public:
     /*!
     * Set Window Layout.
     * Row - Number of Rows.
@@ -51,16 +58,11 @@ public:
     */
     virtual void setView( VSPGraphic::Common::VSPenum type );
 
-public:
     /*!
     * Get graphic engine of this window.
     */
-    VSPGraphic::GraphicEngine * getGraphicEngine()
-    {
-        return m_GEngine;
-    }
+    VSPGraphic::GraphicEngine * getGraphicEngine();
 
-public:
     /*!
     * Pan current selected camera.
     *
@@ -78,99 +80,19 @@ public:
     */
     virtual void zoom( int delta, bool precisionOn = false );
 
-// Override Fl_Gl_Window Functions.
-public:
-    virtual void show();
-    virtual void draw();
-    virtual int  handle( int fl_event );
-
-// Util Functions.
-public:
     virtual void update();
 
-// Private helper functions.
-private:
-    void _initGLEW();
+protected:
+    QSize minimumSizeHint() const Q_DECL_OVERRIDE;
+    void initializeGL() Q_DECL_OVERRIDE;
+    void paintGL() Q_DECL_OVERRIDE;
+    void resizeGL( int w, int h ) Q_DECL_OVERRIDE;
 
-    void _updateTextures( DrawObj * drawObj );
-
-    void _loadTrisData( VSPGraphic::Renderable * destObj, DrawObj * drawObj );
-    void _loadXSecData( VSPGraphic::Renderable * destObj, DrawObj * drawObj );
-    void _loadMarkData( VSPGraphic::Renderable * destObj, DrawObj * drawObj );
-
-    void _update( std::vector<DrawObj *> objects );
-
-    void _setLighting( DrawObj * drawObj );
-
-    void _setClipping( DrawObj * drawObj );
-
-    struct ID;
-
-    ID * _findID( std::string geomID );
-    ID * _findID( unsigned int bufferID );
-
-    void _updateBuffer( std::vector<DrawObj *> objects );
-
-    void _sendFeedback( VSPGraphic::Selectable * selected );
-    void _sendFeedback( std::vector<VSPGraphic::Selectable *> listOfSelected );
-
-    std::vector<std::vector<vec3d>> _generateTexCoordFromXSec( DrawObj * drawObj );
-    double _distance( vec3d pointA, vec3d pointB );
-
-    void OnPush( int x, int y );
-    void OnDrag( int x, int y );
-    void OnRelease( int x, int y );
-    void OnKeyup( int x, int y );
-    void OnKeydown();
-
-private:
-    VSPGraphic::GraphicEngine * m_GEngine;
-    ScreenMgr * m_ScreenMgr;
-
-    struct TextureID
-    {
-        unsigned int bufferTexID;
-        std::string geomTexID;
-    };
-    struct ID
-    {
-        unsigned int bufferID;
-
-        std::string geomID;
-        std::vector<TextureID> textureIDs;
-
-        TextureID * find( std::string geomTexID )
-        {
-            for( int i = 0; i < ( int )textureIDs.size(); i++ )
-            {
-                if( textureIDs[i].geomTexID == geomTexID )
-                {
-                    return &textureIDs[i];
-                }
-            }
-            return NULL;
-        }
-    };
-    std::vector<ID> m_ids;
-
-    float m_LightAmb;
-    float m_LightDiff;
-    float m_LightSpec;
-
-    int m_mouse_x;
-    int m_mouse_y;
-
-    DrawObj::ScreenEnum m_LinkedScreen;
-
-    bool m_initialized;
-
-    glm::vec2 m_prevLB;
-    glm::vec2 m_prevMB;
-    glm::vec2 m_prevRB;
-    glm::vec2 m_prevAltLB;
-    glm::vec2 m_prevCtrlLB;
-    glm::vec2 m_prevMetaLB;
-    glm::vec2 m_prevLBRB;
+    void mousePressEvent( QMouseEvent * ) Q_DECL_OVERRIDE;
+    void mouseMoveEvent( QMouseEvent * ) Q_DECL_OVERRIDE;
+    void mouseReleaseEvent( QMouseEvent * ) Q_DECL_OVERRIDE;
+    void keyPressEvent( QKeyEvent * ) Q_DECL_OVERRIDE;
+    void keyReleaseEvent( QKeyEvent * ) Q_DECL_OVERRIDE;
 };
 }
 #endif
