@@ -2,6 +2,7 @@
 #define _VSP_GRAPHIC_VIEW_MANAGER_H
 
 #include "Common.h"
+#include "VspObj.h"
 
 #include <vector>
 
@@ -20,6 +21,7 @@ class Viewport;
 */
 class Display
 {
+    VSP_DISABLE_COPY( Display )
 public:
     /*!
     * Constructor.

@@ -6,7 +6,9 @@
 #include "CameraMgr.h"
 #include "Scene.h"
 
-#include <assert.h>
+#include <QPoint>
+
+#include <cassert>
 
 namespace VSPGraphic
 {
@@ -106,9 +108,19 @@ void Display::predraw( Scene * scene, int x, int y )
     _currLayout->predraw( scene, x, y );
 }
 
+void Display::predraw( Scene * scene, const QPoint & point )
+{
+    predraw( scene, point.x(), point.y() );
+}
+
 void Display::draw( Scene * scene, int x, int y )
 {
     _currLayout->draw( scene, x, y );
+}
+
+void Display::draw( Scene * scene, const QPoint & point )
+{
+    draw( scene, point.x(), point.y() );
 }
 
 void Display::resetView()
@@ -156,6 +168,11 @@ void Display::rotate( int px, int py, int cx, int cy )
     }
 }
 
+void Display::rotate( const QPoint & p, const QPoint & c )
+{
+    rotate( p.x(), p.y(), c.x(), c.y() );
+}
+
 void Display::pan( int px, int py, int cx, int cy )
 {
     Camera * camera = getCamera();
@@ -163,6 +180,11 @@ void Display::pan( int px, int py, int cx, int cy )
     {
         camera->pan( px, py, cx, cy );
     }
+}
+
+void Display::pan( const QPoint & p, const QPoint & c )
+{
+    pan( p.x(), p.y(), c.x(), c.y() );
 }
 
 void Display::pan( float x, float y )
@@ -181,6 +203,11 @@ void Display::zoom( int px, int py, int cx, int cy )
     {
         camera->zoom( px, py, cx, cy );
     }
+}
+
+void Display::zoom( const QPoint & p, const QPoint & c )
+{
+    zoom( p.x(), p.y(), c.x(), c.y() );
 }
 
 void Display::zoom( float zoomvalue )
@@ -205,4 +232,10 @@ void Display::selectViewport( int x, int y )
 {
     _currLayout->selectViewport( x, y );
 }
+
+void Display::selectViewport( const QPoint & point )
+{
+    selectViewport( point.x(), point.y() );
+}
+
 }
