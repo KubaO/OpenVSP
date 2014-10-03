@@ -2,8 +2,6 @@
 // This file is released under the terms of the NASA Open Source Agreement (NOSA)
 // version 1.3 as detailed in the LICENSE file which accompanies this software.
 //
-
-// VehicleMgr.cpp: implementation of the Vehicle Class and Vehicle Mgr Singleton.
 //
 //////////////////////////////////////////////////////////////////////
 
@@ -21,33 +19,55 @@
 #include "main.h"
 #include <FL/fl_ask.H>
 #include "Display.h"
+#include "Common.h"
+
+#include "VspScreenQt_p.h"
+
+#include <QLabel>
+#include <QWindow>
+#include <QScreen>
+#include <QStatusBar>
+#include <QMainWindow>
+#include <QMessageBox>
+#include <QCloseEvent>
 
 using namespace vsp;
 using VSPGUI::VspGlWindow;
 
-#include "Common.h"
 
-//==== Constructor ====//
-MainVSPScreen::MainVSPScreen( ScreenMgr* mgr ) : VspScreenFLTK( mgr )
+class MainVSPScreen::Private : public QMainWindow, public VspScreenQt::Private
 {
-    MainWinUI* ui = m_MainUI = new MainWinUI();
+    Q_OBJECT
+    VSP_DECLARE_PUBLIC( MainVSPScreen )
 
-    m_FLTK_Window = ui->winShell;
+    QLabel * fileLabel;
+    VSPGUI::VspGlWindow * glWindow;
+    SelectFileScreen selectFileScreen;
 
-    int x, y, width, h, side;
-    Fl::screen_xywh( x, y, width, h );
+    Private( MainVSPScreen * q );
+    QWidget * widget() Q_DECL_OVERRIDE { return this; }
+    bool Update() Q_DECL_OVERRIDE;
+    void closeEvent( QCloseEvent * ) Q_DECL_OVERRIDE;
 
+    std::string CheckAddVSP3Ext( string fname );
+};
+VSP_DEFINE_PRIVATE( MainVSPScreen )
+
+MainVSPScreen::Private::Private( MainVSPScreen * q ) :
+    VspScreenQt::Private( q ),
+    fileLabel( new QLabel ),
+    glWindow( new VspGlWindow( q->m_ScreenMgr, DrawObj::VSP_MAIN_SCREEN ) )
+{
+#if 0
+    QSize const scr = window()->windowHandle()->screen()->size();
     // Figure out which is smaller, half the screen width or the height
-    if ( 0.5 * width < 0.9 * h )
-    {
-        side = 0.9 * h;
-    }
-    else
-    {
-        side = 0.5 * width;
-    }
-    m_FLTK_Window->resize( x + 10, y + 30, side, side );
+    int side = ( 0.5 * scr.width() < 0.9 * scr.height() ) ? 0.9 * scr.height() : 0.5 * scr.width();
+    move( 10, 30 );
+    resize( side, side );
+#endif
+    setCentralWidget( glWindow );
 
+#if 0
     AddMenuCallBack( m_MainUI->NewMenu );
     AddMenuCallBack( m_MainUI->OpenMenu );
     AddMenuCallBack( m_MainUI->SaveMenu );
@@ -107,68 +127,53 @@ MainVSPScreen::MainVSPScreen( ScreenMgr* mgr ) : VspScreenFLTK( mgr )
     AddMenuCallBack( m_MainUI->ShowHelpWebsite );
 
     AddMenuCallBack( m_MainUI->ReturnToAPI );
-    HideReturnToAPI();
-
-    //==== Add Gl Window to Main Window ====//
-    Fl_Widget* w = m_MainUI->GlWinGroup;
-    m_MainUI->GlWinGroup->begin();
-    m_GlWin = new VspGlWindow( mgr, DrawObj::VSP_MAIN_SCREEN );
-    m_MainUI->GlWinGroup->end();
-
-    SetFileLabel( VehicleMgr.GetVehicle()->GetVSP3FileName() );
-
-    m_MainUI->winShell->label( VSPVERSION2 );
-    m_MainUI->TitleBox->label( VSPVERSION3 );
-
-    m_MainUI->winShell->callback(staticCloseCB, this);
-
-    m_selectFileScreen = new SelectFileScreen();
 
     m_MainUI->AdvParmLinkMenu->hide();
     m_MainUI->UserParmMenu->hide();
     m_MainUI->ParmDebugMenu->hide();
+#endif
+
+    setWindowTitle( VSPVERSION2 );
+    statusBar()->addPermanentWidget( fileLabel, 1 );
+    statusBar()->addPermanentWidget( new QLabel( VSPVERSION3 ) );
 }
 
-MainVSPScreen::~MainVSPScreen()
+//==== Constructor ====//
+MainVSPScreen::MainVSPScreen( ScreenMgr* mgr ) :
+    VspScreenQt( *new Private( this ), mgr )
 {
-    delete m_GlWin;
-    delete m_selectFileScreen;
+    SetFileLabel( VehicleMgr.GetVehicle()->GetVSP3FileName() );
+    HideReturnToAPI();
 }
 
-//==== Show Main VSP Screen ====//
-void MainVSPScreen::AddMenuCallBack( Fl_Menu_Item* fl_menu )
+VSPGUI::VspGlWindow * MainVSPScreen::GetGLWindow()
 {
-    fl_menu->callback( staticMenuCB, this );
+    return d_func()->glWindow;
 }
 
-
-//==== Show Main VSP Screen ====//
-void MainVSPScreen::Show()
+void MainVSPScreen::ShowReturnToAPI()
 {
-    m_FLTK_Window->show();
-    m_GlWin->show();
+    /// \todo
+#if 0
+    m_MainUI->ReturnToAPI->show();
+#endif
 }
 
-//==== Hide Main VSP Screen ====//
-void MainVSPScreen::Hide()
+void MainVSPScreen::HideReturnToAPI()
 {
+    /// \todo
+#if 0
+    m_MainUI->ReturnToAPI->hide();
+#endif
 }
-//==== Update Main VSP Screen ====//
-bool MainVSPScreen::Update()
+
+bool MainVSPScreen::Private::Update()
 {
-    // Not sure all three of these are needed.
-    m_GlWin->update();
-    m_MainUI->winShell->redraw();
+    glWindow->update();
     return true;
 }
 
-
-//==== Non Menu Callbacks ====//
-void MainVSPScreen::CallBack( Fl_Widget *w )
-{
-
-}
-
+#if 0
 void MainVSPScreen::MenuCallBack( Fl_Widget *w )
 {
     Fl_Menu_* mw = static_cast< Fl_Menu_* >( w );
@@ -459,8 +464,9 @@ void MainVSPScreen::MenuCallBack( Fl_Widget *w )
         m_ScreenMgr->SetRunGui( false );
     }
 }
+#endif
 
-string MainVSPScreen::CheckAddVSP3Ext( string fname )
+string MainVSPScreen::Private::CheckAddVSP3Ext( string fname )
 {
     string ext = ".vsp3";
     string fext = fname.substr( fname.length() - ext.length(), ext.length() );
@@ -476,45 +482,49 @@ string MainVSPScreen::CheckAddVSP3Ext( string fname )
     return fname;
 }
 
-void MainVSPScreen::SetFileLabel( string fname )
+void MainVSPScreen::SetFileLabel( const string & fname )
 {
     string label = "File Name: ";
     label.append( fname );
-    m_MainUI->FileNameBox->copy_label( label.c_str() );
+    d_func()->fileLabel->setText( label.c_str() );
 }
 
-void MainVSPScreen::CloseCallBack( Fl_Widget *w )
+void MainVSPScreen::Private::closeEvent( QCloseEvent * ev )
 {
-    ExitVSP();
-}
+    QMessageBox box( QMessageBox::Question, "Exit VSP?",
+                     "OpenVSP is exiting. Save or discard your changes.",
+                     QMessageBox::Cancel | QMessageBox::Discard | QMessageBox::Save, this );
+    box.exec();
+    auto button = box.standardButton( box.clickedButton() );
+    if ( button == QMessageBox::Cancel ) {
+        ev->ignore();
+        return;
+    }
+    else if ( button == QMessageBox::Save ) {
+        string savefile = VehicleMgr.GetVehicle()->GetVSP3FileName();
 
-void MainVSPScreen::ExitVSP()
-{
-   switch( fl_choice("VSP is exiting. Save or discard your changes.", "Cancel", "Discard", "Save") )
-    {
-        case(0):
-            break;
+        if ( savefile.compare( "Unnamed.vsp3" ) == 0 )
+        {
+            savefile = GetScreenMgr()->GetSelectFileScreen()->FileSave( "Save VSP File", "*.vsp3" );
+        }
 
-        case(1):
-            vsp_exit();
-            break;
-
-        case(2):
-            string savefile = VehicleMgr.GetVehicle()->GetVSP3FileName();
-
-            if ( savefile.compare( "Unnamed.vsp3" ) == 0 )
-			{
-                savefile = m_ScreenMgr->GetSelectFileScreen()->FileSave( "Save VSP File", "*.vsp3" );
-			}
-
-			if ( savefile.compare( "" ) != 0 )
-			{
-				savefile = CheckAddVSP3Ext( savefile );
-				VehicleMgr.GetVehicle()->SetVSP3FileName( savefile );
-				VehicleMgr.GetVehicle()->WriteXMLFile( savefile, SET_ALL );
-                vsp_exit();
-			}
-            break;
+        if ( !savefile.empty() )
+        {
+            savefile = CheckAddVSP3Ext( savefile );
+            VehicleMgr.GetVehicle()->SetVSP3FileName( savefile );
+            VehicleMgr.GetVehicle()->WriteXMLFile( savefile, SET_ALL );
+            //vsp_exit();
+        }
+        else
+        {
+            ev->ignore();
+        }
+    }
+    else if ( button == QMessageBox::Discard ) {
+        //vsp_exit();
     }
 }
 
+MainVSPScreen::~MainVSPScreen() {}
+
+#include "MainVSPScreen.moc"
