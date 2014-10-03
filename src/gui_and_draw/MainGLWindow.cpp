@@ -35,6 +35,12 @@
 #include "ClippingScreen.h"
 #include "Clipping.h"
 #include "BndBox.h"
+#include "Vec3d.h"
+
+#include <glm/glm.hpp>
+
+#include <vector>
+#include <string>
 
 #include <QWindow>
 #include <QMouseEvent>
@@ -45,6 +51,9 @@
 #define PAN_SPEED 0.025f
 #define PRECISION_ZOOM_SPEED 0.00005f
 #define ZOOM_SPEED 0.00025f
+
+static const unsigned int kNullId = 0xFFFFFFFFu;
+static const glm::vec3 kNullVec3(0xFFFFFFFF);
 
 #pragma warning(disable:4244)
 
@@ -75,8 +84,8 @@ class VspGlWindow::Private
 
     struct ID;
 
-    ID * findID( std::string geomID );
-    ID * findID( unsigned int bufferID );
+    ID & findID( std::string geomID );
+    ID & findID( unsigned int bufferID );
 
     void updateBuffer( std::vector<DrawObj *> objects );
 
@@ -109,8 +118,9 @@ class VspGlWindow::Private
         std::string geomID;
         std::vector<TextureID> textureIDs;
 
-        ID() {}
+        ID() : bufferID( kNullId ) {}
         ID( unsigned int bID, const std::string gID ) : bufferID( bID ), geomID( gID ) {}
+        operator bool() const { return bufferID != kNullId; }
 
         TextureID * find( std::string geomTexID )
         {
@@ -179,6 +189,11 @@ void VspGlWindow::Private::updateMouse()
     mouse = pos;
 }
 
+QSize VspGlWindow::minimumSizeHint() const
+{
+    return QSize( 200, 200 );
+}
+
 void VspGlWindow::setWindowLayout( int row, int column )
 {
     V_D( VspGlWindow );
@@ -191,6 +206,7 @@ void VspGlWindow::setWindowLayout( int row, int column )
 void VspGlWindow::setView( VSPGraphic::Common::VSPenum type )
 {
     d_func()->display()->changeView( type );
+    QGLWidget::update();
 }
 
 void VspGlWindow::pan( int dx, int dy, bool precisionOn )
@@ -305,6 +321,7 @@ void VspGlWindow::update()
         // reset geometry changed flag to false.
         vPtr->ResetDrawObjsGeomChangedFlags();
     }
+    QGLWidget::update();
 }
 
 void VspGlWindow::Private::initGLEW()
@@ -341,16 +358,7 @@ void VspGlWindow::Private::update( std::vector<DrawObj *> objects )
 
         lineWidth = ( float )objects[i]->m_LineWidth;
 
-        unsigned int id;
-        ID * idPtr = findID( objects[i]->m_GeomID );
-        if( idPtr )
-        {
-            id = idPtr->bufferID;
-        }
-        else
-        {
-            id = 0xFFFFFFFF;
-        }
+        unsigned int id = findID( objects[i]->m_GeomID ).bufferID;
 
         Renderable * rObj;
         VSPGraphic::Entity * eObj;
@@ -367,7 +375,7 @@ void VspGlWindow::Private::update( std::vector<DrawObj *> objects )
 
         case DrawObj::VSP_POINTS:
             // Create new scene object if needed.
-            if( id == 0xFFFFFFFF )
+            if( id == kNullId )
             {
                 scene()->createObject( Common::VSP_OBJECT_MARKER, &id );
                 ids.push_back( ID( id, objects[i]->m_GeomID ) );
@@ -392,7 +400,7 @@ void VspGlWindow::Private::update( std::vector<DrawObj *> objects )
             break;
 
         case DrawObj::VSP_LINES:
-            if( id == 0xFFFFFFFF )
+            if( id == kNullId )
             {
                 scene()->createObject( Common::VSP_OBJECT_MARKER, &id );
                 ids.push_back( ID( id, objects[i]->m_GeomID ) );
@@ -414,7 +422,7 @@ void VspGlWindow::Private::update( std::vector<DrawObj *> objects )
             break;
 
         case DrawObj::VSP_LINE_LOOP:
-            if( id == 0xFFFFFFFF )
+            if( id == kNullId )
             {
                 scene()->createObject( Common::VSP_OBJECT_MARKER, &id );
                 ids.push_back( ID( id, objects[i]->m_GeomID ) );
@@ -435,7 +443,7 @@ void VspGlWindow::Private::update( std::vector<DrawObj *> objects )
             break;
 
         case DrawObj::VSP_LINE_STRIP:
-            if( id == 0xFFFFFFFF )
+            if( id == kNullId )
             {
                 scene()->createObject( Common::VSP_OBJECT_MARKER, &id );
                 ids.push_back( ID( id, objects[i]->m_GeomID ) );
@@ -457,7 +465,7 @@ void VspGlWindow::Private::update( std::vector<DrawObj *> objects )
 
         case DrawObj::VSP_WIRE_MESH:
             // Create new scene object if needed.
-            if( id == 0xFFFFFFFF )
+            if( id == kNullId )
             {
                 scene()->createObject( Common::VSP_OBJECT_XSEC_ENTITY, &id );
                 ids.push_back( ID( id, objects[i]->m_GeomID ) );
@@ -484,7 +492,7 @@ void VspGlWindow::Private::update( std::vector<DrawObj *> objects )
             break;
 
         case DrawObj::VSP_WIRE_TRIS:
-            if( id == 0xFFFFFFFF )
+            if( id == kNullId )
             {
                 scene()->createObject( Common::VSP_OBJECT_ENTITY, &id );
                 ids.push_back( ID( id, objects[i]->m_GeomID ) );
@@ -510,7 +518,7 @@ void VspGlWindow::Private::update( std::vector<DrawObj *> objects )
             break;
 
         case DrawObj::VSP_HIDDEN_MESH:
-            if( id == 0xFFFFFFFF )
+            if( id == kNullId )
             {
                 scene()->createObject( Common::VSP_OBJECT_XSEC_ENTITY, &id );
                 ids.push_back( ID( id, objects[i]->m_GeomID ) );
@@ -536,7 +544,7 @@ void VspGlWindow::Private::update( std::vector<DrawObj *> objects )
             break;
 
         case DrawObj::VSP_HIDDEN_TRIS:
-            if( id == 0xFFFFFFFF )
+            if( id == kNullId )
             {
                 scene()->createObject( Common::VSP_OBJECT_ENTITY, &id );
                 ids.push_back( ID( id, objects[i]->m_GeomID ) );
@@ -562,7 +570,7 @@ void VspGlWindow::Private::update( std::vector<DrawObj *> objects )
             break;
 
         case DrawObj::VSP_HIDDEN_TRIS_CFD:
-            if( id == 0xFFFFFFFF )
+            if( id == kNullId )
             {
                 scene()->createObject( Common::VSP_OBJECT_CFD_ENTITY, &id );
                 ids.push_back( ID( id, objects[i]->m_GeomID ) );
@@ -588,7 +596,7 @@ void VspGlWindow::Private::update( std::vector<DrawObj *> objects )
             break;
 
         case DrawObj::VSP_SHADED_MESH:
-            if( id == 0xFFFFFFFF )
+            if( id == kNullId )
             {
                 scene()->createObject( Common::VSP_OBJECT_XSEC_ENTITY, &id );
                 ids.push_back( ID( id, objects[i]->m_GeomID ) );
@@ -612,7 +620,7 @@ void VspGlWindow::Private::update( std::vector<DrawObj *> objects )
             break;
 
         case DrawObj::VSP_SHADED_TRIS:
-            if( id == 0xFFFFFFFF )
+            if( id == kNullId )
             {
                 scene()->createObject( Common::VSP_OBJECT_ENTITY, &id );
                 ids.push_back( ID( id, objects[i]->m_GeomID ) );
@@ -636,7 +644,7 @@ void VspGlWindow::Private::update( std::vector<DrawObj *> objects )
             break;
 
         case DrawObj::VSP_TEXTURED_MESH:
-            if( id == 0xFFFFFFFF )
+            if( id == kNullId )
             {
                 scene()->createObject( Common::VSP_OBJECT_XSEC_ENTITY, &id );
                 ids.push_back( ID( id, objects[i]->m_GeomID ) );
@@ -674,16 +682,7 @@ void VspGlWindow::Private::update( std::vector<DrawObj *> objects )
             continue;
         }
 
-        unsigned int id;
-        ID * idPtr = findID( objects[i]->m_GeomID );
-        if( idPtr )
-        {
-            id = idPtr->bufferID;
-        }
-        else
-        {
-            id = 0xFFFFFFFF;
-        }
+        unsigned int id = findID( objects[i]->m_GeomID ).bufferID;
 
         VSPGraphic::Ruler * ruler;
 
@@ -692,7 +691,7 @@ void VspGlWindow::Private::update( std::vector<DrawObj *> objects )
         switch( objects[i]->m_Type )
         {
         case DrawObj::VSP_RULER:
-            if( id == 0xFFFFFFFF )
+            if( id == kNullId )
             {
                 scene()->createObject( Common::VSP_OBJECT_RULER, &id );
                 ids.push_back( ID( id, objects[i]->m_GeomID ) );
@@ -767,16 +766,7 @@ void VspGlWindow::Private::update( std::vector<DrawObj *> objects )
             continue;
         }
 
-        unsigned int id;
-        ID * idPtr = findID( objects[i]->m_GeomID );
-        if( idPtr )
-        {
-            id = idPtr->bufferID;
-        }
-        else
-        {
-            id = 0xFFFFFFFF;
-        }
+        unsigned int id = findID( objects[i]->m_GeomID ).bufferID;
 
         Pickable * pObj;
         PickablePnts * ppntObj;
@@ -788,12 +778,12 @@ void VspGlWindow::Private::update( std::vector<DrawObj *> objects )
             break;
 
         case DrawObj::VSP_PICK_GEOM:
-            if( id == 0xFFFFFFFF )
+            if( id == kNullId )
             {
-                ID * sourceId = findID( objects[i]->m_PickSourceID );
+                ID & sourceId = findID( objects[i]->m_PickSourceID );
                 if( sourceId )
                 {
-                    scene()->createObject( Common::VSP_OBJECT_PICK_GEOM, &id, sourceId->bufferID );
+                    scene()->createObject( Common::VSP_OBJECT_PICK_GEOM, &id, sourceId.bufferID );
                     ids.push_back( ID( id, objects[i]->m_GeomID ) );
                 }
             }
@@ -807,12 +797,12 @@ void VspGlWindow::Private::update( std::vector<DrawObj *> objects )
             break;
 
         case DrawObj::VSP_PICK_VERTEX:
-            if( id == 0xFFFFFFFF )
+            if( id == kNullId )
             {
-                ID * sourceId = findID( objects[i]->m_PickSourceID );
-                if(sourceId)
+                ID & sourceId = findID( objects[i]->m_PickSourceID );
+                if( sourceId )
                 {
-                    scene()->createObject( Common::VSP_OBJECT_PICK_VERTEX, &id, sourceId->bufferID );
+                    scene()->createObject( Common::VSP_OBJECT_PICK_VERTEX, &id, sourceId.bufferID );
                     ids.push_back( ID( id, objects[i]->m_GeomID ) );
                 }
             }
@@ -827,12 +817,12 @@ void VspGlWindow::Private::update( std::vector<DrawObj *> objects )
             break;
 
         case DrawObj::VSP_PICK_VERTEX_SELECT_ALL:
-            if( id == 0xFFFFFFFF )
+            if( id == kNullId )
             {
-                ID * sourceId = findID( objects[i]->m_PickSourceID );
-                if(sourceId)
+                ID & sourceId = findID( objects[i]->m_PickSourceID );
+                if( sourceId )
                 {
-                    scene()->createObject( Common::VSP_OBJECT_PICK_VERTEX, &id, sourceId->bufferID );
+                    scene()->createObject( Common::VSP_OBJECT_PICK_VERTEX, &id, sourceId.bufferID );
                     ids.push_back( ID( id, objects[i]->m_GeomID ) );
                 }
             }
@@ -858,7 +848,7 @@ void VspGlWindow::Private::update( std::vector<DrawObj *> objects )
             break;
 
         case DrawObj::VSP_PICK_LOCATION:
-            if( id == 0xFFFFFFFF )
+            if( id == kNullId )
             {
                 scene()->createObject( Common::VSP_OBJECT_PICK_LOCATION, &id, 0 );
                 ids.push_back( ID( id, objects[i]->m_GeomID ) );
@@ -896,23 +886,14 @@ void VspGlWindow::Private::update( std::vector<DrawObj *> objects )
 
         lineWidth = ( float )objects[i]->m_LineWidth;
 
-        unsigned int id;
-        ID * idPtr = findID( objects[i]->m_GeomID );
-        if( idPtr )
-        {
-            id = idPtr->bufferID;
-        }
-        else
-        {
-            id = 0xFFFFFFFF;
-        }
+        unsigned int id = findID( objects[i]->m_GeomID ).bufferID;
 
         Renderable * rObj;
 
         switch( objects[i]->m_Type )
         {
         case DrawObj::VSP_POINTS:
-            if( id == 0xFFFFFFFF )
+            if( id == kNullId )
             {
                 scene()->createObject( Common::VSP_OBJECT_MARKER, &id );
                 ids.push_back( ID( id, objects[i]->m_GeomID ) );
@@ -936,7 +917,7 @@ void VspGlWindow::Private::update( std::vector<DrawObj *> objects )
             break;
 
         case DrawObj::VSP_LINES:
-            if( id == 0xFFFFFFFF )
+            if( id == kNullId )
             {
                 scene()->createObject( Common::VSP_OBJECT_MARKER, &id );
                 ids.push_back( ID( id, objects[i]->m_GeomID ) );
@@ -958,7 +939,7 @@ void VspGlWindow::Private::update( std::vector<DrawObj *> objects )
             break;
 
         case DrawObj::VSP_LINE_LOOP:
-            if( id == 0xFFFFFFFF )
+            if( id == kNullId )
             {
                 scene()->createObject( Common::VSP_OBJECT_MARKER, &id );
                 ids.push_back( ID( id, objects[i]->m_GeomID ) );
@@ -978,7 +959,7 @@ void VspGlWindow::Private::update( std::vector<DrawObj *> objects )
             break;
 
         case DrawObj::VSP_LINE_STRIP:
-            if( id == 0xFFFFFFFF )
+            if( id == kNullId )
             {
                 scene()->createObject( Common::VSP_OBJECT_MARKER, &id );
                 ids.push_back( ID( id, objects[i]->m_GeomID ) );
@@ -1004,28 +985,30 @@ void VspGlWindow::Private::update( std::vector<DrawObj *> objects )
     }
 }
 
-VspGlWindow::Private::ID * VspGlWindow::Private::findID( std::string geomID )
+VspGlWindow::Private::ID & VspGlWindow::Private::findID( std::string geomID )
 {
+    static const ID kNullID;
     for( int i = 0; i < ( int )ids.size(); i++ )
     {
         if( ids[i].geomID == geomID )
         {
-            return &ids[i];
+            return ids[i];
         }
     }
-    return NULL;
+    return const_cast<ID&>(kNullID);
 }
 
-VspGlWindow::Private::ID * VspGlWindow::Private::findID( unsigned int bufferID )
+VspGlWindow::Private::ID & VspGlWindow::Private::findID( unsigned int bufferID )
 {
+    static const ID kNullID;
     for( int i = 0; i < ( int )ids.size(); i++ )
     {
         if( ids[i].bufferID == bufferID )
         {
-            return &ids[i];
+            return ids[i];
         }
     }
-    return NULL;
+    return const_cast<ID&>(kNullID);
 }
 
 void VspGlWindow::Private::updateBuffer( std::vector<DrawObj *> objects )
@@ -1068,7 +1051,7 @@ void VspGlWindow::Private::updateBuffer( std::vector<DrawObj *> objects )
 
 void VspGlWindow::Private::updateTextures( DrawObj * drawObj )
 {
-    ID * id = findID( drawObj->m_GeomID );
+    ID & id = findID( drawObj->m_GeomID );
     if( !id )
     {
         // Can't find Object that is linked to this drawObj
@@ -1076,7 +1059,7 @@ void VspGlWindow::Private::updateTextures( DrawObj * drawObj )
         return;
     }
 
-    Renderable * renderable = dynamic_cast<Renderable*>( scene()->getObject( id->bufferID ) );
+    Renderable * renderable = dynamic_cast<Renderable*>( scene()->getObject( id.bufferID ) );
     if( renderable )
     {
         VSPGraphic::Entity * entity = dynamic_cast<VSPGraphic::Entity *>( renderable );
@@ -1088,21 +1071,21 @@ void VspGlWindow::Private::updateTextures( DrawObj * drawObj )
             std::vector<TextureID> texToRemove;
             std::vector<TextureID> texToKeep;
 
-            for( int i = 0; i < ( int )id->textureIDs.size(); i++ )
+            for( int i = 0; i < ( int )id.textureIDs.size(); i++ )
             {
                 bool exist = false;
                 for( int j = 0; j < ( int )drawObj->m_TextureInfos.size(); j++ )
                 {
-                    if( id->textureIDs[i].geomTexID == drawObj->m_TextureInfos[j].ID )
+                    if( id.textureIDs[i].geomTexID == drawObj->m_TextureInfos[j].ID )
                     {
-                        texToKeep.push_back( id->textureIDs[i] );
+                        texToKeep.push_back( id.textureIDs[i] );
                         exist = true;
                         break;
                     }
                 }
                 if( !exist )
                 {
-                    texToRemove.push_back( id->textureIDs[i] );
+                    texToRemove.push_back( id.textureIDs[i] );
                 }
             }
 
@@ -1111,10 +1094,10 @@ void VspGlWindow::Private::updateTextures( DrawObj * drawObj )
                 entity->getTextureMgr()->remove( texToRemove[i].bufferTexID );
             }
 
-            id->textureIDs.clear();
+            id.textureIDs.clear();
             for( int i = 0; i < ( int )texToKeep.size(); i++ )
             {
-                id->textureIDs.push_back( texToKeep[i] );
+                id.textureIDs.push_back( texToKeep[i] );
             }
 
             // Update / add textures.
@@ -1124,7 +1107,7 @@ void VspGlWindow::Private::updateTextures( DrawObj * drawObj )
             {
                 unsigned int texBufferID;
 
-                TextureID * texID = id->find( drawObjTexList[i].ID );
+                TextureID * texID = id.find( drawObjTexList[i].ID );
                 if( texID )
                 {
                     texBufferID = texID->bufferTexID;
@@ -1136,7 +1119,7 @@ void VspGlWindow::Private::updateTextures( DrawObj * drawObj )
                     newTex.geomTexID = drawObjTexList[i].ID;
                     newTex.bufferTexID = entity->getTextureMgr()
                         ->add( VSPGraphic::GlobalTextureRepo()->get2DTexture(drawObjTexList[i].FileName.c_str() ) );
-                    id->textureIDs.push_back( newTex );
+                    id.textureIDs.push_back( newTex );
 
                     texBufferID = newTex.bufferTexID;
                 }
@@ -1461,7 +1444,7 @@ void VspGlWindow::mousePressEvent( QMouseEvent * ev )
         else if( ev->modifiers() == Qt::NoModifier )
         {
             // LB
-            glm::vec3 mouseInWorld = glm::vec3( 0xFFFFFFFF );
+            glm::vec3 mouseInWorld = kNullVec3;
 
             // Getting mouse location in world space.  This is for selectLocation().
             Viewport * vp = d->viewport();
@@ -1477,7 +1460,7 @@ void VspGlWindow::mousePressEvent( QMouseEvent * ev )
                 d->sendFeedback( selected );
             }
             // Select location in world.
-            else if( mouseInWorld != glm::vec3( 0xFFFFFFFF ) && 
+            else if( mouseInWorld != kNullVec3 &&
                 d->scene()->selectLocation( mouseInWorld.x, mouseInWorld.y, mouseInWorld.z ) )
             {
                 Selectable * selected = d->scene()->getLastSelected();
@@ -1613,7 +1596,7 @@ void VspGlWindow::keyReleaseEvent( QKeyEvent * ev )
         {
             BndBox bbox = vPtr->GetBndBox();
             vec3d p = bbox.GetCenter();
-            m_GEngine->getDisplay()->setCOR( -p.x(), -p.y(), -p.z() );
+            display->setCOR( -p.x(), -p.y(), -p.z() );
         }
         display->center();
         break;
@@ -1712,7 +1695,7 @@ void VspGlWindow::keyPressEvent( QKeyEvent * ev )
     {
     case Qt::Key_P:
         geomScreen = dynamic_cast<ManageGeomScreen *>
-            ( getScreen( ScreenMgr::VSP_MANAGE_GEOM_SCREEN ) );
+            ( d->getScreen( ScreenMgr::VSP_MANAGE_GEOM_SCREEN ) );
         if( geomScreen )
         {
             geomScreen->TriggerPickSwitch();
@@ -1720,7 +1703,7 @@ void VspGlWindow::keyPressEvent( QKeyEvent * ev )
         break;
     case Qt::Key_R:
         corScreen = dynamic_cast<ManageCORScreen *> 
-            ( getScreen( ScreenMgr::VSP_COR_SCREEN ) );
+            ( d->getScreen( ScreenMgr::VSP_COR_SCREEN ) );
         if( corScreen )
         {
             corScreen->EnableSelection();
@@ -1732,7 +1715,7 @@ void VspGlWindow::keyPressEvent( QKeyEvent * ev )
         {
             vector< string > none;
             vPtr->SetActiveGeomVec( none );
-            m_ScreenMgr->SetUpdateFlag( true );
+            d->screenMgr->SetUpdateFlag( true );
         }
         break;
     }
@@ -1770,11 +1753,11 @@ void VspGlWindow::Private::sendFeedback( Selectable * selected )
             XSecEntity * xEntity = dynamic_cast<XSecEntity*>(pnt->getSource());
             if(xEntity)
             {
-                ID * id = findID( xEntity->getID() );
+                ID & id = findID( xEntity->getID() );
                 if( id )
                 {
-                    int index = id->geomID.find_last_of( '_' );
-                    std::string baseId = id->geomID.substr( 0, index );
+                    int index = id.geomID.find_last_of( '_' );
+                    std::string baseId = id.geomID.substr( 0, index );
                     glm::vec3 placement = xEntity->getVertexVec(pnt->getIndex());
                     labelScreen->Set( vec3d( placement.x, placement.y, placement.z ), baseId );
 
@@ -1795,11 +1778,11 @@ void VspGlWindow::Private::sendFeedback( Selectable * selected )
         SelectedGeom * geom = dynamic_cast<SelectedGeom*>( selected );
         if( geom )
         {
-            ID * id = findID( geom->getSource()->getID() );
+            ID & id = findID( geom->getSource()->getID() );
             if( id )
             {
-                int index = id->geomID.find_last_of( '_' );
-                std::string baseId = id->geomID.substr( 0, index );
+                int index = id.geomID.find_last_of( '_' );
+                std::string baseId = id.geomID.substr( 0, index );
                 geomScreen->Set( baseId );
 
                 // Only one selection is needed for Geom, remove this 'selected' from selection list.
@@ -1811,7 +1794,7 @@ void VspGlWindow::Private::sendFeedback( Selectable * selected )
         // this case where a geometry is selected, geometry's window becomes the new
         // focus.  The behavior locks up geometry selection process.  Set OpenGL
         // window back on focus so user can proceed without interruption.
-        focus(this);
+        q_ptr->setFocus();
     }
 
     // Center of rotation Screen Feedback
@@ -1828,8 +1811,8 @@ void VspGlWindow::Private::sendFeedback( Selectable * selected )
             {
                 glm::vec3 placement = entity->getVertexVec(pnt->getIndex());
 
-                m_GEngine->getDisplay()->setCOR( -placement.x, -placement.y, -placement.z );
-                m_GEngine->getDisplay()->center();
+                display()->setCOR( -placement.x, -placement.y, -placement.z );
+                display()->center();
 
                 // This is a dummy call to let corScreen know the job is done.
                 corScreen->Set( vec3d( placement.x, placement.y, placement.z ) );

@@ -8,12 +8,6 @@
 #ifndef VSP_GUI_GL_WINDOW_H
 #define VSP_GUI_GL_WINDOW_H
 
-#include <vector>
-#include <string>
-
-#include <glm/glm.hpp>
-
-#include "Vec3d.h"
 #include "Common.h"
 
 #include "DrawObj.h"

@@ -158,7 +158,6 @@ bool MainVSPScreen::Update()
 {
     // Not sure all three of these are needed.
     m_GlWin->update();
-    m_GlWin->redraw();
     m_MainUI->winShell->redraw();
     return true;
 }
@@ -222,47 +221,38 @@ void MainVSPScreen::MenuCallBack( Fl_Widget *w )
     else if ( m == m_MainUI->TopViewMenu )
     {
         m_GlWin->setView( VSPGraphic::Common::VSP_CAM_TOP );
-        m_GlWin->redraw();
     }
     else if ( m == m_MainUI->FrontViewMenu )
     {
         m_GlWin->setView( VSPGraphic::Common::VSP_CAM_FRONT );
-        m_GlWin->redraw();
     }
     else if ( m == m_MainUI->LeftSideViewMenu )
     {
         m_GlWin->setView( VSPGraphic::Common::VSP_CAM_LEFT );
-        m_GlWin->redraw();
     }
     else if ( m == m_MainUI->LeftIsoViewMenu )
     {
         m_GlWin->setView( VSPGraphic::Common::VSP_CAM_LEFT_ISO );
-        m_GlWin->redraw();
     }
     else if ( m == m_MainUI->BottomViewMenu )
     {
         m_GlWin->setView( VSPGraphic::Common::VSP_CAM_BOTTOM );
-        m_GlWin->redraw();
     }
     else if ( m == m_MainUI->BackViewMenu )
     {
         m_GlWin->setView( VSPGraphic::Common::VSP_CAM_REAR );
-        m_GlWin->redraw();
     }
     else if ( m == m_MainUI->RightSideViewMenu )
     {
         m_GlWin->setView( VSPGraphic::Common::VSP_CAM_RIGHT );
-        m_GlWin->redraw();
     }
     else if ( m == m_MainUI->RightIsoViewMenu )
     {
         m_GlWin->setView( VSPGraphic::Common::VSP_CAM_RIGHT_ISO );
-        m_GlWin->redraw();
     }
     else if ( m == m_MainUI->CenterViewMenu )
     {
         m_GlWin->setView( VSPGraphic::Common::VSP_CAM_CENTER );
-        m_GlWin->redraw();
     }
     else if ( m == m_MainUI->AdjustViewMenu )
     {
