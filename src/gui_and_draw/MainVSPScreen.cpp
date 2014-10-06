@@ -17,7 +17,6 @@
 #include "APIDefines.h"
 #include "Exit.h"
 #include "main.h"
-#include <FL/fl_ask.H>
 #include "Display.h"
 #include "Common.h"
 
@@ -44,7 +43,7 @@ class MainVSPScreen::Private : public QMainWindow, public VspScreenQt::Private
     VSPGUI::VspGlWindow * glWindow;
     SelectFileScreen selectFileScreen;
 
-    Private( MainVSPScreen * q );
+    Private( MainVSPScreen * q , ScreenMgr * mgr );
     QWidget * widget() Q_DECL_OVERRIDE { return this; }
     bool Update() Q_DECL_OVERRIDE;
     void closeEvent( QCloseEvent * ) Q_DECL_OVERRIDE;
@@ -53,10 +52,10 @@ class MainVSPScreen::Private : public QMainWindow, public VspScreenQt::Private
 };
 VSP_DEFINE_PRIVATE( MainVSPScreen )
 
-MainVSPScreen::Private::Private( MainVSPScreen * q ) :
+MainVSPScreen::Private::Private( MainVSPScreen * q, ScreenMgr * mgr ) :
     VspScreenQt::Private( q ),
     fileLabel( new QLabel ),
-    glWindow( new VspGlWindow( q->m_ScreenMgr, DrawObj::VSP_MAIN_SCREEN ) )
+    glWindow( new VspGlWindow( mgr, DrawObj::VSP_MAIN_SCREEN ) )
 {
 #if 0
     QSize const scr = window()->windowHandle()->screen()->size();
@@ -138,9 +137,8 @@ MainVSPScreen::Private::Private( MainVSPScreen * q ) :
     statusBar()->addPermanentWidget( new QLabel( VSPVERSION3 ) );
 }
 
-//==== Constructor ====//
 MainVSPScreen::MainVSPScreen( ScreenMgr* mgr ) :
-    VspScreenQt( *new Private( this ), mgr )
+    VspScreenQt( *new Private( this, mgr ), mgr )
 {
     SetFileLabel( VehicleMgr.GetVehicle()->GetVSP3FileName() );
     HideReturnToAPI();
@@ -513,7 +511,7 @@ void MainVSPScreen::Private::closeEvent( QCloseEvent * ev )
             savefile = CheckAddVSP3Ext( savefile );
             VehicleMgr.GetVehicle()->SetVSP3FileName( savefile );
             VehicleMgr.GetVehicle()->WriteXMLFile( savefile, SET_ALL );
-            //vsp_exit();
+            vsp_exit();
         }
         else
         {
@@ -521,7 +519,7 @@ void MainVSPScreen::Private::closeEvent( QCloseEvent * ev )
         }
     }
     else if ( button == QMessageBox::Discard ) {
-        //vsp_exit();
+        vsp_exit();
     }
 }
 
