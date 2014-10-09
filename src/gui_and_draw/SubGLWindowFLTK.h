@@ -1,5 +1,5 @@
-#ifndef _VSP_GUI_2D_GL_WINDOW_H
-#define _VSP_GUI_2D_GL_WINDOW_H
+#ifndef _VSP_GUI_2D_GL_WINDOW_FLTK_H
+#define _VSP_GUI_2D_GL_WINDOW_FLTK_H
 
 #include <FL/Fl.H>
 #include <FL/Fl_Gl_Window.H>
