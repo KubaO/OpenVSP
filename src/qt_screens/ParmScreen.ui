@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>ParmScreen</class>
+ <widget class="QDialog" name="ParmScreen">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>255</width>
+    <height>361</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Parm Links</string>
+  </property>
+  <layout class="QGridLayout" name="gridLayout">
+   <property name="spacing">
+    <number>6</number>
+   </property>
+   <item row="0" column="0" colspan="2">
+    <widget class="QLabel" name="nameBox">
+     <property name="text">
+      <string>Parm:</string>
+     </property>
+     <property name="alignment">
+      <set>Qt::AlignCenter</set>
+     </property>
+    </widget>
+   </item>
+   <item row="1" column="0" colspan="2">
+    <widget class="QTextBrowser" name="parmDescription"/>
+   </item>
+   <item row="2" column="0">
+    <widget class="QLabel" name="sectionHeader_2">
+     <property name="text">
+      <string>Linked To ➡</string>
+     </property>
+     <property name="alignment">
+      <set>Qt::AlignCenter</set>
+     </property>
+    </widget>
+   </item>
+   <item row="2" column="1" rowspan="2">
+    <widget class="QPushButton" name="setParmAButton">
+     <property name="text">
+      <string>Set Parm A</string>
+     </property>
+    </widget>
+   </item>
+   <item row="3" column="0">
+    <widget class="QListWidget" name="linkedToBrowser"/>
+   </item>
+   <item row="4" column="0">
+    <widget class="QLabel" name="sectionHeader_3">
+     <property name="text">
+      <string>➡ Linked From</string>
+     </property>
+     <property name="alignment">
+      <set>Qt::AlignCenter</set>
+     </property>
+    </widget>
+   </item>
+   <item row="4" column="1" rowspan="2">
+    <widget class="QPushButton" name="setParmBButton">
+     <property name="text">
+      <string>Set Parm B</string>
+     </property>
+    </widget>
+   </item>
+   <item row="5" column="0">
+    <widget class="QListWidget" name="linkedFromBrowser"/>
+   </item>
+  </layout>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>

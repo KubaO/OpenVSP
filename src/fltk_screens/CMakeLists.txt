@@ -9,7 +9,6 @@ advLinkFlScreen.fl
 testFlScreen.fl
 curveEditFlScreen.fl
 feaStructFlScreen.fl
-parmFlScreen.fl
 structureBrowserScreen.fl
 userParmFlScreen.fl
 )
